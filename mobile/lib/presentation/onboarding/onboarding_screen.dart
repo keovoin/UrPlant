@@ -43,7 +43,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     await prefs.setString('language', _selectedLanguage);
     await prefs.setBool('onboarding_complete', true);
     ref.read(localeProvider.notifier).state = Locale(_selectedLanguage == 'km' ? 'km' : 'en');
-    if (mounted) Navigator.pop(context);
+    // Tell AuthGate to stop showing onboarding
+    ref.read(showOnboardingProvider.notifier).state = false;
   }
 
   @override

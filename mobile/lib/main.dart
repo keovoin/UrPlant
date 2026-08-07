@@ -13,27 +13,31 @@ import 'l10n/app_localizations.dart';
 
 final localeProvider = StateProvider<Locale>((ref) => const Locale('en'));
 
+// null = loading, false = show onboarding, true = skip to auth
+final showOnboardingProvider = StateProvider<bool?>((ref) => null);
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase with error catching
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('Firebase initialized successfully');
-    print('Platform: ${DefaultFirebaseOptions.currentPlatform.apiKey.substring(0, 10)}...');
   } catch (e) {
-    print('Firebase init error: $e');
-    runApp(ErrorApp(error: e.toString()));
+    runApp(ProviderScope(child: ErrorApp(error: e.toString())));
     return;
   }
 
   final prefs = await SharedPreferences.getInstance();
   final savedLang = prefs.getString('language') ?? 'en';
+  final hasSeenOnboarding = prefs.getBool('onboarding_complete') == true;
+
   runApp(
     ProviderScope(
-      overrides: [localeProvider.overrideWith((ref) => Locale(savedLang))],
+      overrides: [
+        localeProvider.overrideWith((ref) => Locale(savedLang)),
+        showOnboardingProvider.overrideWith((ref) => !hasSeenOnboarding),
+      ],
       child: const UrPlantApp(),
     ),
   );
@@ -88,32 +92,26 @@ class UrPlantApp extends ConsumerWidget {
 class AuthGate extends ConsumerWidget {
   const AuthGate({super.key});
 
-  Future<bool> _shouldShowOnboarding() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('onboarding_complete') != true;
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return FutureBuilder<bool>(
-      future: _shouldShowOnboarding(),
+    final showOnboarding = ref.watch(showOnboardingProvider);
+
+    if (showOnboarding == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (showOnboarding == true) {
+      return const OnboardingScreen();
+    }
+
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
-        if (snapshot.data == true) {
-          return const OnboardingScreen();
-        }
-        return StreamBuilder<User?>(
-          stream: FirebaseAuth.instance.authStateChanges(),
-          builder: (context, userSnapshot) {
-            if (userSnapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(body: Center(child: CircularProgressIndicator()));
-            }
-            if (userSnapshot.hasData) return const AppShell();
-            return const AuthScreen();
-          },
-        );
+        if (snapshot.hasData) return const AppShell();
+        return const AuthScreen();
       },
     );
   }

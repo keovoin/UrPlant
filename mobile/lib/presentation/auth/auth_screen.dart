@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/theme.dart';
-import '../shell/app_shell.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -58,35 +57,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     if (mounted) setState(() => _loading = false);
   }
 
-  Future<void> _signInWithGoogle() async {
-    try {
-      await FirebaseAuth.instance.signInWithProvider(GoogleAuthProvider());
-    } on FirebaseAuthException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message ?? 'Error')),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
-        }
-        if (snapshot.hasData) {
-          return const AppShell();
-        }
-        return _buildForm(context);
-      },
-    );
-  }
-
-  Widget _buildForm(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -94,96 +66,63 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           child: Column(
             children: [
               const SizedBox(height: 40),
-
-              // UrPlant branding
               Container(
-                width: 88,
-                height: 88,
+                width: 88, height: 88,
                 decoration: BoxDecoration(
                   gradient: UrPlantTheme.primaryGradient,
                   borderRadius: BorderRadius.circular(22),
                   boxShadow: [
                     BoxShadow(
                       color: UrPlantTheme.primaryMedium.withValues(alpha: 0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
+                      blurRadius: 20, offset: const Offset(0, 8),
                     ),
                   ],
                 ),
                 child: const Icon(Icons.eco, color: Colors.white, size: 44),
               ),
               const SizedBox(height: 20),
-              Text(
-                'UrPlant',
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      color: UrPlantTheme.primaryMedium,
-                      fontWeight: FontWeight.w800,
-                    ),
-              ),
+              Text('UrPlant',
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                        color: UrPlantTheme.primaryMedium, fontWeight: FontWeight.w800)),
               const SizedBox(height: 4),
-              Text(
-                'Discover the world around you',
-                style: TextStyle(fontSize: 14, color: UrPlantTheme.textTertiary, letterSpacing: 0.3),
-              ),
+              Text('Discover the world around you',
+                  style: TextStyle(fontSize: 14, color: UrPlantTheme.textTertiary, letterSpacing: 0.3)),
               const SizedBox(height: 40),
-
-              // Form
               if (!_isLogin) ...[
                 TextField(
-                  controller: _nameCtrl,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(
-                    hintText: 'Display Name',
-                    prefixIcon: Icon(Icons.person_outline, size: 20),
-                  ),
+                  controller: _nameCtrl, textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(hintText: 'Display Name', prefixIcon: Icon(Icons.person_outline, size: 20)),
                 ),
                 const SizedBox(height: 14),
               ],
               TextField(
-                controller: _emailCtrl,
-                keyboardType: TextInputType.emailAddress,
+                controller: _emailCtrl, keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  hintText: 'Email',
-                  prefixIcon: Icon(Icons.email_outlined, size: 20),
-                ),
+                decoration: const InputDecoration(hintText: 'Email', prefixIcon: Icon(Icons.email_outlined, size: 20)),
               ),
               const SizedBox(height: 14),
               TextField(
-                controller: _passCtrl,
-                obscureText: true,
+                controller: _passCtrl, obscureText: true,
                 textInputAction: TextInputAction.done,
                 onSubmitted: _loading ? null : (_) => _submit(),
-                decoration: const InputDecoration(
-                  hintText: 'Password',
-                  prefixIcon: Icon(Icons.lock_outline, size: 20),
-                ),
+                decoration: const InputDecoration(hintText: 'Password', prefixIcon: Icon(Icons.lock_outline, size: 20)),
               ),
               const SizedBox(height: 28),
-
-              // Submit button
               SizedBox(
-                width: double.infinity,
-                height: 52,
+                width: double.infinity, height: 52,
                 child: ElevatedButton(
                   onPressed: _loading ? null : _submit,
                   child: _loading
-                      ? const SizedBox(
-                          width: 22, height: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
+                      ? const SizedBox(width: 22, height: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                       : Text(_isLogin ? 'Log In' : 'Create Account'),
                 ),
               ),
               const SizedBox(height: 16),
-
               const SizedBox(height: 12),
-              // Toggle login/signup
               TextButton(
                 onPressed: () => setState(() => _isLogin = !_isLogin),
-                child: Text(_isLogin
-                    ? "Don't have an account? Sign up"
-                    : 'Already have an account? Log in'),
+                child: Text(_isLogin ? "Don't have an account? Sign up" : 'Already have an account? Log in'),
               ),
               const SizedBox(height: 16),
             ],
