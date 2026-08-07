@@ -43,13 +43,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     await prefs.setString('language', _selectedLanguage);
     await prefs.setBool('onboarding_complete', true);
     ref.read(localeProvider.notifier).state = Locale(_selectedLanguage == 'km' ? 'km' : 'en');
-    if (mounted) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const AuthScreen()),
-        (route) => false,
-      );
-    }
+    if (mounted) Navigator.pop(context);
   }
 
   @override
