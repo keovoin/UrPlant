@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/theme.dart';
+import '../shell/app_shell.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -40,6 +41,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         );
         await FirebaseAuth.instance.currentUser?.updateDisplayName(_nameCtrl.text.trim());
       }
+      // Navigate to main app on success
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const AppShell()),
+          (route) => false,
+        );
+      }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -57,8 +66,15 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     if (mounted) setState(() => _loading = false);
   }
 
+  String _t(String en, String km) {
+    final locale = Localizations.localeOf(context);
+    return locale.languageCode == 'km' ? km : en;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isKhmer = Localizations.localeOf(context).languageCode == 'km';
+
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -85,27 +101,38 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                         color: UrPlantTheme.primaryMedium, fontWeight: FontWeight.w800)),
               const SizedBox(height: 4),
-              Text('Discover the world around you',
-                  style: TextStyle(fontSize: 14, color: UrPlantTheme.textTertiary, letterSpacing: 0.3)),
+              Text(
+                _t('Discover the world around you', 'រកឃើញពិភពលោកជុំវិញអ្នក'),
+                style: TextStyle(fontSize: 14, color: UrPlantTheme.textTertiary, letterSpacing: 0.3),
+              ),
               const SizedBox(height: 40),
               if (!_isLogin) ...[
                 TextField(
                   controller: _nameCtrl, textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(hintText: 'Display Name', prefixIcon: Icon(Icons.person_outline, size: 20)),
+                  decoration: InputDecoration(
+                    hintText: _t('Display Name', 'ឈ្មោះបង្ហាញ'),
+                    prefixIcon: const Icon(Icons.person_outline, size: 20),
+                  ),
                 ),
                 const SizedBox(height: 14),
               ],
               TextField(
                 controller: _emailCtrl, keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(hintText: 'Email', prefixIcon: Icon(Icons.email_outlined, size: 20)),
+                decoration: InputDecoration(
+                  hintText: _t('Email', 'អ៊ីមែល'),
+                  prefixIcon: const Icon(Icons.email_outlined, size: 20),
+                ),
               ),
               const SizedBox(height: 14),
               TextField(
                 controller: _passCtrl, obscureText: true,
                 textInputAction: TextInputAction.done,
                 onSubmitted: _loading ? null : (_) => _submit(),
-                decoration: const InputDecoration(hintText: 'Password', prefixIcon: Icon(Icons.lock_outline, size: 20)),
+                decoration: InputDecoration(
+                  hintText: _t('Password', 'ពាក្យសម្ងាត់'),
+                  prefixIcon: const Icon(Icons.lock_outline, size: 20),
+                ),
               ),
               const SizedBox(height: 28),
               SizedBox(
@@ -115,14 +142,15 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                   child: _loading
                       ? const SizedBox(width: 22, height: 22,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : Text(_isLogin ? 'Log In' : 'Create Account'),
+                      : Text(_isLogin ? _t('Log In', 'ចូល') : _t('Create Account', 'បង្កើតគណនី')),
                 ),
               ),
-              const SizedBox(height: 16),
               const SizedBox(height: 12),
               TextButton(
                 onPressed: () => setState(() => _isLogin = !_isLogin),
-                child: Text(_isLogin ? "Don't have an account? Sign up" : 'Already have an account? Log in'),
+                child: Text(_isLogin
+                    ? _t("Don't have an account? Sign up", 'មិនទាន់មានគណនី? ចុះឈ្មោះ')
+                    : _t('Already have an account? Log in', 'មានគណនីរួចហើយ? ចូល')),
               ),
               const SizedBox(height: 16),
             ],
