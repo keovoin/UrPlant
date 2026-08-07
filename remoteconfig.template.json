@@ -1,0 +1,75 @@
+{
+  "parameterGroups": {},
+  "parameters": {
+    "ai_provider": {
+      "defaultValue": {
+        "value": "self_hosted_vlm"
+      },
+      "description": "AI identification provider: self_hosted_vlm | plantid | openai_vision_gateway",
+      "valueType": "STRING"
+    },
+    "rarity_distribution_normal": {
+      "defaultValue": {
+        "value": "70"
+      },
+      "description": "Target percentage of Normal rarity plants",
+      "valueType": "NUMBER"
+    },
+    "rarity_distribution_rare": {
+      "defaultValue": {
+        "value": "25"
+      },
+      "description": "Target percentage of Rare rarity plants",
+      "valueType": "NUMBER"
+    },
+    "rarity_distribution_special": {
+      "defaultValue": {
+        "value": "5"
+      },
+      "description": "Target percentage of Special Rare rarity plants",
+      "valueType": "NUMBER"
+    },
+    "confidence_threshold": {
+      "defaultValue": {
+        "value": "0.6"
+      },
+      "description": "Minimum AI confidence score to accept identification (0.0-1.0)",
+      "valueType": "NUMBER"
+    },
+    "daily_scan_limit_free": {
+      "defaultValue": {
+        "value": "5"
+      },
+      "description": "Max scans per day for free tier users",
+      "valueType": "NUMBER"
+    },
+    "daily_scan_limit_guest": {
+      "defaultValue": {
+        "value": "3"
+      },
+      "description": "Max scans per day for guest users",
+      "valueType": "NUMBER"
+    },
+    "xp_per_unlock": {
+      "defaultValue": {
+        "value": "100"
+      },
+      "description": "XP awarded for unlocking a new plant",
+      "valueType": "NUMBER"
+    },
+    "xp_per_duplicate": {
+      "defaultValue": {
+        "value": "50"
+      },
+      "description": "XP awarded for duplicate identification",
+      "valueType": "NUMBER"
+    },
+    "max_image_upload_mb": {
+      "defaultValue": {
+        "value": "4"
+      },
+      "description": "Maximum image upload size in MB",
+      "valueType": "NUMBER"
+    }
+  }
+}

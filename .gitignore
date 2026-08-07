@@ -1,0 +1,47 @@
+# Flutter
+mobile/.dart_tool/
+mobile/.packages
+mobile/.pub/
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+mobile/ios/Flutter/Flutter.framework
+mobile/ios/Flutter/Flutter.podspec
+mobile/android/.gradle/
+mobile/android/app/build/
+mobile/android/local.properties
+mobile/android/key.properties
+
+# Firebase
+.firebase/
+*.log
+firebase-debug.log
+
+# Node
+functions/node_modules/
+functions/lib/
+admin/node_modules/
+admin/dist/
+
+# IDE
+.vscode/
+.idea/
+*.iml
+.DS_Store
+
+# Environment (🔒 NEVER commit real keys)
+.env
+*.env
+.env.*
+.env.local
+.env.production
+.env.backup
+!.env.example
+functions/.env
+
+# Secrets
+google-services.json
+GoogleService-Info.plist
+service-account-key.json

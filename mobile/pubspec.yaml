@@ -1,0 +1,66 @@
+name: urplant
+description: UrPlant — Plant Recognition App with AI & Achievements
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.0
+  cloud_firestore: ^5.4.0
+  firebase_storage: ^12.3.0
+  firebase_remote_config: ^5.1.0
+
+  # Camera
+  camera: ^0.11.0
+  image_picker: ^1.1.0
+
+  # State Management
+  flutter_riverpod: ^2.5.0
+
+  # Networking
+  dio: ^5.7.0
+  connectivity_plus: ^6.0.0
+
+  # Localization
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+
+  # UI Components
+  cached_network_image: ^3.4.0
+  shimmer: ^3.0.0
+  confetti: ^0.8.0
+  lottie: ^3.1.0
+  flutter_svg: ^2.0.0
+  google_fonts: ^6.2.0
+
+  # Storage
+  shared_preferences: ^2.3.0
+
+  # Utilities
+  image: ^4.2.0
+  uuid: ^4.5.0
+  url_launcher: ^6.3.0
+
+  # Permissions
+  permission_handler: ^11.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  generate: true
+
+  assets:
+    - assets/images/
+    - assets/animations/
