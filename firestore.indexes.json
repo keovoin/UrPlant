@@ -17,6 +17,22 @@
       ]
     },
     {
+      "collectionGroup": "plants",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "scientific_name_lower", "order": "ASCENDING" },
+        { "fieldPath": "verified", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "unverified_plants",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "scientific_name_lower", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "user_plants",
       "queryScope": "COLLECTION",
       "fields": [
