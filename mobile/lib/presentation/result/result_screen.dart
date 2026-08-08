@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import 'dart:convert';
 import '../../config/theme.dart';
 import '../../data/services/api_service.dart';
@@ -154,7 +155,12 @@ class _ResultScreenState extends State<ResultScreen> {
                             width: double.infinity,
                             child: OutlinedButton.icon(
                               onPressed: () {
-                                // Share via platform share sheet
+                                final name = r.plant!['name_en'] ?? '';
+                                final sci = r.plant!['scientific_name'] ?? '';
+                                Share.share(
+                                  'I just identified $name ($sci) with UrPlant! 🌿',
+                                  subject: 'Plant Discovery',
+                                );
                               },
                               icon: const Icon(Icons.share_outlined, size: 18),
                               label: const Text('Share'),
