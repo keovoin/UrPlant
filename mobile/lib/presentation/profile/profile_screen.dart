@@ -14,7 +14,6 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = FirebaseAuth.instance.currentUser;
     final uid = user?.uid;
-    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -145,7 +144,7 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 24),
 
-                      // Stats grid — modern cards with colored icon circles
+                      // Stats grid
                       Row(
                         children: [
                           _modernStatCard('Total Scans', '${data['total_scans'] ?? 0}',
@@ -178,7 +177,7 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 8),
 
-                      // Language tile with modern chip-style toggle
+                      // Language tile
                       Card(
                         margin: EdgeInsets.zero,
                         child: Padding(
@@ -245,6 +244,19 @@ class ProfileScreen extends ConsumerWidget {
                           }
                         },
                       ),
+                      const SizedBox(height: 24),
+
+                      // Version label
+                      Center(
+                        child: Text(
+                          'UrPlant v1.0.1',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: UrPlantTheme.textTertiary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                     ],
                   ),
                 );
