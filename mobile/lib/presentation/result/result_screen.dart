@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
-import 'dart:convert';
 import '../../config/theme.dart';
 import '../../data/services/api_service.dart';
-import '../../data/services/local_history_store.dart';
 import '../camera/camera_screen.dart';
 import '../plant_detail/plant_detail_screen.dart';
 import 'package:confetti/confetti.dart';
@@ -157,9 +155,11 @@ class _ResultScreenState extends State<ResultScreen> {
                               onPressed: () {
                                 final name = r.plant!['name_en'] ?? '';
                                 final sci = r.plant!['scientific_name'] ?? '';
-                                Share.share(
-                                  'I just identified $name ($sci) with UrPlant! 🌿',
-                                  subject: 'Plant Discovery',
+                                SharePlus.instance.share(
+                                  ShareParams(
+                                    text: 'I just identified $name ($sci) with UrPlant! 🌿',
+                                    subject: 'Plant Discovery',
+                                  ),
                                 );
                               },
                               icon: const Icon(Icons.share_outlined, size: 18),
