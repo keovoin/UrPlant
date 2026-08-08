@@ -45,7 +45,7 @@ class HomeScreen extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.person_outline),
-            onPressed: () => ref.read(selectedTabProvider.notifier).state = 2,
+            onPressed: () => ref.read(selectedTabProvider.notifier).state = 3,
           ),
         ],
       ),

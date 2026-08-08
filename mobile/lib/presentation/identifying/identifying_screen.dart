@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../config/theme.dart';
 import '../../data/services/api_service.dart';
+import '../../data/services/local_history_store.dart';
 import '../result/result_screen.dart';
 
 class IdentifyingScreen extends StatefulWidget {
@@ -45,6 +48,19 @@ class _IdentifyingScreenState extends State<IdentifyingScreen>
     _identify();
   }
 
+  void _saveToHistory(IdentifyResult result) {
+    final plantJson = result.plant != null ? jsonEncode(result.plant) : null;
+    final record = ScanRecord(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      timestamp: DateTime.now(),
+      plantName: result.plant?['name_en'] ?? 'Unknown Plant',
+      plantDataJson: plantJson,
+      matchStatus: result.matchStatus,
+      xpEarned: result.xpEarned,
+    );
+    LocalHistoryStore.saveScan(record);
+  }
+
   void _startAnimation() {
     _timer = Timer.periodic(const Duration(milliseconds: 1800), (timer) {
       if (mounted) {
@@ -65,6 +81,9 @@ class _IdentifyingScreenState extends State<IdentifyingScreen>
       final result = await _apiService.identifyPlant(widget.imageBytes, null);
       _timer?.cancel();
       _spinCtrl.dispose();
+
+      // Save to local history
+      _saveToHistory(result);
 
       if (mounted) {
         Navigator.pushReplacement(

@@ -2,7 +2,7 @@
  * enrichInfo Cloud Function
  * 
  * Async enrichment — called from identifyPlant to generate:
- * - English description, origin, care guide, fun facts
+ * - English description, origin, characteristics, habitat, uses, care guide, fun facts
  * - Khmer translations of all content
  * 
  * Uses self-hosted AI gateway (DeepSeek/OpenAI-compatible endpoint).
@@ -19,9 +19,12 @@ const db = admin.firestore();
 const ENRICHMENT_PROMPT = `You are a botanist assistant. Given the following plant information, generate:
 1. A 2-3 sentence description in English (engaging, educational)
 2. Native origin/region (where this plant naturally grows)
-3. Care guide with 5 fields: water needs, sunlight, soil type, temperature range, humidity preference
-4. 3 fun facts (interesting, surprising)
-5. All of the above translated into Khmer (ភាសាខ្មែរ)
+3. Physical characteristics (2-3 sentences — leaf shape, flower type, height, color, etc.)
+4. Habitat (where this plant naturally grows — forests, meadows, wetlands, deserts, etc.)
+5. Uses (common uses — ornamental, medicinal, culinary, timber, etc.; include warnings if applicable)
+6. Care guide with 5 fields: water needs, sunlight, soil type, temperature range, humidity preference
+7. 3 fun facts (interesting, surprising)
+8. All of the above translated into Khmer (ភាសាខ្មែរ)
 
 Plant: {plant_name}
 Scientific name: {scientific_name}
@@ -33,6 +36,9 @@ Respond with ONLY valid JSON, no markdown, no explanation:
   "en": {
     "description": "...",
     "origin": "...",
+    "characteristics": "...",
+    "habitat": "...",
+    "uses": "...",
     "care": {
       "water": "...",
       "sunlight": "...",
@@ -45,6 +51,9 @@ Respond with ONLY valid JSON, no markdown, no explanation:
   "kh": {
     "description": "...",
     "origin": "...",
+    "characteristics": "...",
+    "habitat": "...",
+    "uses": "...",
     "care": {
       "water": "...",
       "sunlight": "...",
@@ -85,7 +94,6 @@ export const enrichInfo = functions
 
       console.log(`[enrichInfo] Enriching plant: ${plant_name} (${plant_id})`);
 
-      // Get AI gateway config (your airouter-kh.fly.dev endpoint)
       const aiUrl = process.env.SELF_HOSTED_AI_URL || 'https://airouter-kh.fly.dev/v1/chat/completions';
       const aiKey = process.env.SELF_HOSTED_AI_KEY || '';
       const aiModel = process.env.SELF_HOSTED_AI_MODEL || 'deepseek-chat';
@@ -96,27 +104,22 @@ export const enrichInfo = functions
         return;
       }
 
-      // Build prompt
       const prompt = ENRICHMENT_PROMPT
         .replace('{plant_name}', plant_name)
         .replace('{scientific_name}', scientific_name)
         .replace('{taxonomy}', JSON.stringify(taxonomy || {}))
         .replace('{confidence}', String(confidence || 0));
 
-      // Call AI gateway
       const response = await axios.post(
         aiUrl,
         {
           model: aiModel,
           messages: [
-            {
-              role: 'system',
-              content: 'You are a helpful botanist assistant. You respond only with valid JSON.',
-            },
+            { role: 'system', content: 'You are a helpful botanist assistant. You respond only with valid JSON.' },
             { role: 'user', content: prompt },
           ],
           temperature: 0.7,
-          max_tokens: 2000,
+          max_tokens: 2500,
         },
         {
           headers: {
@@ -130,7 +133,6 @@ export const enrichInfo = functions
       const content = response.data?.choices?.[0]?.message?.content || '';
       console.log(`[enrichInfo] AI response length: ${content.length}`);
 
-      // Parse JSON from response
       let enriched: any;
       try {
         const jsonMatch = content.match(/\{[\s\S]*\}/);
@@ -141,32 +143,33 @@ export const enrichInfo = functions
         return;
       }
 
-      // Update Firestore plant doc
       const plantRef = db.collection('plants').doc(plant_id);
       const updateData: Record<string, any> = {
         updated_at: admin.firestore.FieldValue.serverTimestamp(),
       };
 
-      // English content
       if (enriched.en) {
         if (enriched.en.description) updateData.description_en = enriched.en.description;
         if (enriched.en.origin) updateData.origin_en = enriched.en.origin;
+        if (enriched.en.characteristics) updateData.characteristics_en = enriched.en.characteristics;
+        if (enriched.en.habitat) updateData.habitat_en = enriched.en.habitat;
+        if (enriched.en.uses) updateData.uses_en = enriched.en.uses;
         if (enriched.en.care) updateData.care_en = enriched.en.care;
         if (enriched.en.fun_facts) updateData.fun_facts_en = enriched.en.fun_facts;
       }
 
-      // Khmer content
       if (enriched.kh) {
         if (enriched.kh.description) updateData.description_kh = enriched.kh.description;
         if (enriched.kh.origin) updateData.origin_kh = enriched.kh.origin;
+        if (enriched.kh.characteristics) updateData.characteristics_kh = enriched.kh.characteristics;
+        if (enriched.kh.habitat) updateData.habitat_kh = enriched.kh.habitat;
+        if (enriched.kh.uses) updateData.uses_kh = enriched.kh.uses;
         if (enriched.kh.care) updateData.care_kh = enriched.kh.care;
         if (enriched.kh.fun_facts) updateData.fun_facts_kh = enriched.kh.fun_facts;
       }
 
-      // Update search keywords
       if (enriched.en) {
         const keywords = new Set<string>();
-        // Add plant name variations
         if (plant_name) keywords.add(plant_name.toLowerCase());
         if (scientific_name) keywords.add(scientific_name.toLowerCase());
         if (enriched.en.origin) keywords.add(enriched.en.origin.toLowerCase());
@@ -174,11 +177,6 @@ export const enrichInfo = functions
           for (const fact of enriched.en.fun_facts) {
             fact.split(' ').slice(0, 5).forEach((w: string) => keywords.add(w.toLowerCase()));
           }
-        }
-        if (enriched.kh?.description) {
-          enriched.kh.description.split(/[\s\u1780-\u17FF]+/).slice(0, 10).forEach((w: string) => {
-            if (w.length > 1) keywords.add(w);
-          });
         }
         updateData.search_keywords = Array.from(keywords).slice(0, 50);
       }

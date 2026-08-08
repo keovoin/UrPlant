@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/theme.dart';
 import '../home/home_screen.dart';
 import '../encyclopedia/encyclopedia_screen.dart';
+import '../history/history_screen.dart';
 import '../profile/profile_screen.dart';
 
 final selectedTabProvider = StateProvider<int>((ref) => 0);
@@ -20,6 +21,7 @@ class AppShell extends ConsumerWidget {
         children: const [
           HomeScreen(),
           EncyclopediaScreen(),
+          HistoryScreen(),
           ProfileScreen(),
         ],
       ),
@@ -55,6 +57,11 @@ class AppShell extends ConsumerWidget {
               icon: Icon(Icons.menu_book_outlined, size: 24),
               selectedIcon: Icon(Icons.menu_book_rounded, size: 24),
               label: 'Encyclopedia',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.history, size: 24),
+              selectedIcon: Icon(Icons.history_rounded, size: 24),
+              label: 'History',
             ),
             NavigationDestination(
               icon: Icon(Icons.person_outline, size: 24),

@@ -302,7 +302,7 @@ export const identifyPlant = functions
             app_version: parsed.fields.app_version || null,
           });
 
-          const plantData = formatPlantResponse(matchedPlant, userLanguage);
+          const plantData = formatPlantResponse(matchedPlant, userLanguage, { characteristics: aiResult.characteristics, habitat: aiResult.habitat, uses: aiResult.uses });
 
           res.status(200).json({
             success: true,
@@ -412,7 +412,7 @@ export const identifyPlant = functions
             app_version: parsed.fields.app_version || null,
           });
 
-          const plantData = formatPlantResponse(matchedPlant, userLanguage);
+          const plantData = formatPlantResponse(matchedPlant, userLanguage, { characteristics: aiResult.characteristics, habitat: aiResult.habitat, uses: aiResult.uses });
 
           res.status(200).json({
             success: true,
@@ -500,7 +500,7 @@ export const identifyPlant = functions
   });
 
 // ─── Helper: Format plant data for API response ────────────────────
-function formatPlantResponse(plant: any, language: string) {
+function formatPlantResponse(plant: any, language: string, aiFields?: { characteristics?: string; habitat?: string; uses?: string }) {
   const en = language !== 'kh';
 
   return {
@@ -514,6 +514,9 @@ function formatPlantResponse(plant: any, language: string) {
     rarity: plant.rarity || 'normal',
     description: en ? (plant.description_en || '') : (plant.description_kh || plant.description_en || ''),
     origin: en ? (plant.origin_en || '') : (plant.origin_kh || plant.origin_en || ''),
+    characteristics: en ? (plant.characteristics_en || aiFields?.characteristics || '') : (plant.characteristics_kh || aiFields?.characteristics || ''),
+    habitat: en ? (plant.habitat_en || aiFields?.habitat || '') : (plant.habitat_kh || aiFields?.habitat || ''),
+    uses: en ? (plant.uses_en || aiFields?.uses || '') : (plant.uses_kh || aiFields?.uses || ''),
     care: en ? (plant.care_en || {}) : (plant.care_kh || plant.care_en || {}),
     fun_facts: en ? (plant.fun_facts_en || []) : (plant.fun_facts_kh || plant.fun_facts_en || []),
     image_url: plant.image_urls?.[0] || '',

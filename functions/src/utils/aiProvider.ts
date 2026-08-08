@@ -14,6 +14,9 @@ export interface IdentificationResult {
   species: string;
   common_names: string[];
   confidence: number;
+  characteristics: string;
+  habitat: string;
+  uses: string;
   taxonomy: {
     kingdom: string;
     family: string;
@@ -37,6 +40,9 @@ Respond ONLY with valid JSON, no markdown, no explanation:
   "scientific_name": "Genus species",
   "common_names": ["common name 1", "common name 2"],
   "confidence": 0.0 to 1.0,
+  "characteristics": "2-3 sentences describing physical features, leaf shape, flower type, height, etc.",
+  "habitat": "Where this plant naturally grows — forests, meadows, wetlands, deserts, etc.",
+  "uses": "Common uses — ornamental, medicinal, culinary, timber, etc. Include warnings if applicable.",
   "taxonomy": {
     "kingdom": "Plantae",
     "family": "Family name",
@@ -72,7 +78,7 @@ async function identifyWithOpenAIVision(imageBase64: string): Promise<Identifica
             ],
           },
         ],
-        max_tokens: 500,
+        max_tokens: 800,
         temperature: 0.2,
       },
       {
@@ -97,6 +103,9 @@ async function identifyWithOpenAIVision(imageBase64: string): Promise<Identifica
         species: 'Unknown',
         common_names: [],
         confidence: 0,
+        characteristics: '',
+        habitat: '',
+        uses: '',
         taxonomy: { kingdom: 'Plantae', family: '', genus: '', species: '' },
         raw_response: content,
         provider: 'openai_vision_gateway',
@@ -107,6 +116,9 @@ async function identifyWithOpenAIVision(imageBase64: string): Promise<Identifica
       species: parsed.scientific_name || 'Unknown',
       common_names: Array.isArray(parsed.common_names) ? parsed.common_names : [],
       confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0,
+      characteristics: parsed.characteristics || '',
+      habitat: parsed.habitat || '',
+      uses: parsed.uses || '',
       taxonomy: {
         kingdom: parsed.taxonomy?.kingdom || 'Plantae',
         family: parsed.taxonomy?.family || '',
@@ -154,6 +166,9 @@ async function identifyWithOllama(imageBase64: string): Promise<IdentificationRe
         species: 'Unknown',
         common_names: [],
         confidence: 0,
+        characteristics: '',
+        habitat: '',
+        uses: '',
         taxonomy: { kingdom: 'Plantae', family: '', genus: '', species: '' },
         raw_response: text,
         provider: 'ollama_qwen2_vl',
@@ -164,6 +179,9 @@ async function identifyWithOllama(imageBase64: string): Promise<IdentificationRe
       species: parsed.scientific_name || 'Unknown',
       common_names: Array.isArray(parsed.common_names) ? parsed.common_names : [],
       confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0,
+      characteristics: parsed.characteristics || '',
+      habitat: parsed.habitat || '',
+      uses: parsed.uses || '',
       taxonomy: {
         kingdom: parsed.taxonomy?.kingdom || 'Plantae',
         family: parsed.taxonomy?.family || '',
@@ -210,6 +228,9 @@ async function identifyWithPlantId(imageBase64: string): Promise<IdentificationR
         species: 'Unknown',
         common_names: [],
         confidence: 0,
+        characteristics: '',
+        habitat: '',
+        uses: '',
         taxonomy: { kingdom: 'Plantae', family: '', genus: '', species: '' },
         raw_response: JSON.stringify(response.data),
         provider: 'plantid_api',
@@ -222,6 +243,9 @@ async function identifyWithPlantId(imageBase64: string): Promise<IdentificationR
       species: suggestion.plant_name || 'Unknown',
       common_names: suggestion.plant_details?.common_names || [],
       confidence: suggestion.probability || 0,
+      characteristics: suggestion.plant_details?.structured_description?.characteristics || '',
+      habitat: suggestion.plant_details?.structured_description?.habitat || '',
+      uses: suggestion.plant_details?.structured_description?.uses || '',
       taxonomy: {
         kingdom: taxonomy.kingdom || 'Plantae',
         family: taxonomy.family || '',

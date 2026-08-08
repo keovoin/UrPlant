@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class Plant {
   final String id;
   final String nameEn;
@@ -7,109 +9,88 @@ class Plant {
   final String genus;
   final String species;
   final String rarity;
-  final String descriptionEn;
-  final String descriptionKh;
-  final String originEn;
-  final String originKh;
-  final Map<String, String>? careEn;
-  final Map<String, String>? careKh;
-  final List<String> funFactsEn;
-  final List<String> funFactsKh;
+  final String description;
+  final String origin;
+  final String characteristics;
+  final String habitat;
+  final String uses;
+  final Map<String, dynamic> care;
+  final List<String> funFacts;
   final String imageUrl;
   final String thumbnailUrl;
-  final bool verified;
-  final int totalUnlocks;
 
   Plant({
     required this.id,
-    required this.nameEn,
-    required this.nameKh,
-    required this.scientificName,
-    required this.family,
-    required this.genus,
-    required this.species,
-    required this.rarity,
-    this.descriptionEn = '',
-    this.descriptionKh = '',
-    this.originEn = '',
-    this.originKh = '',
-    this.careEn,
-    this.careKh,
-    this.funFactsEn = const [],
-    this.funFactsKh = const [],
+    this.nameEn = '',
+    this.nameKh = '',
+    this.scientificName = '',
+    this.family = '',
+    this.genus = '',
+    this.species = '',
+    this.rarity = 'normal',
+    this.description = '',
+    this.origin = '',
+    this.characteristics = '',
+    this.habitat = '',
+    this.uses = '',
+    this.care = const {},
+    this.funFacts = const [],
     this.imageUrl = '',
     this.thumbnailUrl = '',
-    this.verified = false,
-    this.totalUnlocks = 0,
   });
 
-  factory Plant.fromMap(String id, Map<String, dynamic> data) {
-    return Plant(
-      id: id,
-      nameEn: data['name_en'] ?? '',
-      nameKh: data['name_kh'] ?? '',
-      scientificName: data['scientific_name'] ?? '',
-      family: data['family'] ?? '',
-      genus: data['genus'] ?? '',
-      species: data['species'] ?? '',
-      rarity: data['rarity'] ?? 'normal',
-      descriptionEn: data['description_en'] ?? '',
-      descriptionKh: data['description_kh'] ?? '',
-      originEn: data['origin_en'] ?? '',
-      originKh: data['origin_kh'] ?? '',
-      careEn: data['care_en'] != null
-          ? Map<String, String>.from(data['care_en'])
-          : null,
-      careKh: data['care_kh'] != null
-          ? Map<String, String>.from(data['care_kh'])
-          : null,
-      funFactsEn: List<String>.from(data['fun_facts_en'] ?? []),
-      funFactsKh: List<String>.from(data['fun_facts_kh'] ?? []),
-      imageUrl: data['image_urls']?.isNotEmpty == true
-          ? data['image_urls'][0]
-          : (data['image_url'] ?? ''),
-      thumbnailUrl: data['thumbnail_url'] ?? '',
-      verified: data['verified'] ?? false,
-      totalUnlocks: data['total_unlocks'] ?? 0,
-    );
-  }
+  factory Plant.fromMap(String id, Map<String, dynamic> data) => Plant(
+    id: id,
+    nameEn: data['name_en'] ?? '',
+    nameKh: data['name_kh'] ?? '',
+    scientificName: data['scientific_name'] ?? '',
+    family: data['family'] ?? '',
+    genus: data['genus'] ?? '',
+    species: data['species'] ?? '',
+    rarity: data['rarity'] ?? 'normal',
+    description: data['description'] ?? data['description_en'] ?? '',
+    origin: data['origin'] ?? data['origin_en'] ?? '',
+    characteristics: data['characteristics'] ?? data['characteristics_en'] ?? '',
+    habitat: data['habitat'] ?? data['habitat_en'] ?? '',
+    uses: data['uses'] ?? data['uses_en'] ?? '',
+    care: data['care'] is Map ? Map<String, dynamic>.from(data['care']) : {},
+    funFacts: data['fun_facts'] is List
+        ? List<String>.from(data['fun_facts'].map((e) => e.toString()))
+        : [],
+    imageUrl: data['image_url'] ?? '',
+    thumbnailUrl: data['thumbnail_url'] ?? '',
+  );
 
-  String localizedName(bool isKh) => isKh ? nameKh : nameEn;
-  String localizedDescription(bool isKh) =>
-      isKh && descriptionKh.isNotEmpty ? descriptionKh : descriptionEn;
-  String localizedOrigin(bool isKh) =>
-      isKh && originKh.isNotEmpty ? originKh : originEn;
-  Map<String, String>? localizedCare(bool isKh) =>
-      (isKh && careKh != null) ? careKh : careEn;
-  List<String> localizedFunFacts(bool isKh) =>
-      (isKh && funFactsKh.isNotEmpty) ? funFactsKh : funFactsEn;
+  String localizedName(bool isKh) => isKh && nameKh.isNotEmpty ? nameKh : nameEn;
+  String localizedDescription(bool isKh) => description;
+  String localizedOrigin(bool isKh) => origin;
+  Map<String, dynamic>? localizedCare(bool isKh) => care.isNotEmpty ? care : null;
+  List<String> localizedFunFacts(bool isKh) => funFacts;
 }
 
 class UserPlant {
   final String plantId;
-  final String? rarity;
-  final String photoUrl;
+  final String rarity;
   final String thumbnailUrl;
-  final DateTime unlockedAt;
+  final String photoUrl;
   final int sightingCount;
+  final DateTime unlockedAt;
 
   UserPlant({
     required this.plantId,
-    this.rarity,
-    required this.photoUrl,
-    required this.thumbnailUrl,
+    this.rarity = 'normal',
+    this.thumbnailUrl = '',
+    this.photoUrl = '',
+    this.sightingCount = 0,
     required this.unlockedAt,
-    this.sightingCount = 1,
   });
 
-  factory UserPlant.fromMap(Map<String, dynamic> data) {
-    return UserPlant(
-      plantId: data['plant_id'] ?? '',
-      rarity: data['rarity'],
-      photoUrl: data['photo_url'] ?? '',
-      thumbnailUrl: data['thumbnail_url'] ?? '',
-      unlockedAt: (data['unlocked_at'] as dynamic)?.toDate() ?? DateTime.now(),
-      sightingCount: data['sighting_count'] ?? 1,
-    );
-  }
+  factory UserPlant.fromMap(Map<String, dynamic> data) => UserPlant(
+    plantId: data['plant_id'] ?? '',
+    rarity: data['rarity'] ?? 'normal',
+    thumbnailUrl: data['thumbnail_url'] ?? '',
+    photoUrl: data['photo_url'] ?? '',
+    sightingCount: data['sighting_count'] ?? 0,
+    unlockedAt: (data['unlocked_at'] as dynamic)?.toDate() ?? DateTime.now(),
+  );
 }
