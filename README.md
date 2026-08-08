@@ -1,143 +1,113 @@
-# 🌿 UrPlant — Plant Recognition App
+# 🌿 UrPlant — Your Pocket Botanist
 
-**Discover · Identify · Collect**
+**Snap any plant. Discover its story. Build your living collection.**
 
-UrPlant is a bilingual (English & Khmer) mobile app that uses AI to identify real-world plants through your phone's camera. Build your personal plant encyclopedia, unlock rare species, earn achievements, and explore rich botanical knowledge.
-
----
-
-## 📱 App Features
-
-- 🔍 **AI Plant Recognition** — Snap a photo in-app and identify plants instantly with Plant.id AI
-- 🏆 **Rarity System** — Normal (70%), Rare (25%), Special Rare (5%) plants with unique celebration animations
-- 📚 **Personal Encyclopedia** — Unlock plants by finding them in real life; locked plants show as mysterious silhouettes
-- 🎯 **Achievements** — 26 achievements across Collection, Rarity, Exploration, Streak, and Special categories
-- 🌍 **Bilingual** — Full English & Khmer (ភាសាខ្មែរ) support — all UI, plant names, descriptions, care guides
-- 📷 **In-App Camera Only** — No gallery uploads or internet photos allowed; anti-spoofing validation
-- 🎨 **Beautiful UX** — Material 3 design, confetti celebrations, haptic feedback, rarity-based animations
-- 🛡️ **Admin Portal** — Web dashboard for plant database management, photo review, user management, analytics
+> The fastest AI plant identifier in Cambodia — and the only one that speaks Khmer.
 
 ---
 
-## 🏗️ Architecture
+## 🌱 What is UrPlant?
 
-```
-Mobile App (Flutter)     Backend (Firebase)        Admin Portal (React)
-     │                       │                          │
-     ├─ Camera capture ──→ Cloud Functions ──→ Plant.id API
-     │                       │                  Self-hosted AI
-     ├─ Encyclopedia  ←── Firestore ←─── Admin CRUD
-     │                       │
-     ├─ Achievements  ←── Cloud Functions
-     │                       │
-     └─ Profile        ←── Firebase Auth
-```
+Ever walked past a beautiful flower and wondered what it is? Or found a strange plant in your garden and wanted to know if it's safe?
+
+**UrPlant gives you the answer in seconds.** Just open the camera, point at any plant, and our AI instantly tells you everything — its name, where it's from, how to care for it, and whether it's edible, medicinal, or poisonous. No typing, no searching. Just point and discover.
 
 ---
 
-## 📂 Project Structure
+## ✨ Why People Love UrPlant
 
-| Directory | Purpose |
-|-----------|---------|
-| [`docs/`](docs/) | **Memory Bank** — complete technical blueprint (9 documents) |
-| [`mobile/`](mobile/) | Flutter mobile app (Android + iOS) |
-| [`functions/`](functions/) | Firebase Cloud Functions (Node.js/TypeScript) |
-| [`admin/`](admin/) | Admin web portal (React + Vite + Tailwind) |
-
----
-
-## 📚 Memory Bank (Documentation Blueprint)
-
-The `docs/` directory contains the complete **MB (Memory Bank)** — a full technical specification for building UrPlant from scratch using AI coding assistants (Cline, Copilot, etc.).
-
-| # | Document | Contents |
-|---|----------|----------|
-| 1 | **[MB.md](docs/MB.md)** | Master index, architecture diagram, data flow, naming conventions, quick reference |
-| 2 | **[PRD.md](docs/PRD.md)** | Product requirements, user stories, functional/non-functional specs, KPIs |
-| 3 | **[TECH_STACK.md](docs/TECH_STACK.md)** | Complete technology stack with versions, rationale, dependencies, costs |
-| 4 | **[DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md)** | Firestore collections, schemas, indexes, security rules, query patterns |
-| 5 | **[API_SPEC.md](docs/API_SPEC.md)** | Cloud Functions endpoints, Plant.id integration, request/response schemas, anti-spoofing |
-| 6 | **[UX_SPEC.md](docs/UX_SPEC.md)** | Screen-by-screen UX/UI: 13 screens, animations, colors, typography, empty states |
-| 7 | **[RARITY_ACHIEVEMENTS.md](docs/RARITY_ACHIEVEMENTS.md)** | Rarity system (Normal/Rare/Special Rare), XP/level mechanics, 26 achievement definitions |
-| 8 | **[LOCALIZATION.md](docs/LOCALIZATION.md)** | EN/KH bilingual strategy, complete ARB files (~150 keys each), font setup, AI translation |
-| 9 | **[ADMIN_PORTAL.md](docs/ADMIN_PORTAL.md)** | Admin web app: 10+ pages, component tree, API integration, auth/security |
-| 10 | **[SETUP_GUIDE.md](docs/SETUP_GUIDE.md)** | Step-by-step from blank machine to running app (Firebase, Flutter, Functions, Admin, CI/CD) |
+| | |
+|---|---|
+| ⚡ **Instant Answers** | Identify any plant in under 3 seconds. No waiting, no uploads — just snap and learn. |
+| 🏆 **Gamified Exploration** | Every discovery earns XP. Unlock rare plants, earn achievements, and level up your collection. Normal, Rare, and Special Rare — how many can you find? |
+| 📚 **Your Living Encyclopedia** | Every plant you scan stays in your personal collection forever. Revisit care guides, check origin stories, and track your discovery stats anytime. |
+| 🇰🇭 **Full Khmer Support** | Not just translated — our AI generates rich Khmer descriptions, care tips, and fun facts. The only plant app with true bilingual AI. |
+| 🛡️ **Safety First** | Edible? Poisonous? Medicinal? Invasive? Our AI flags important safety alerts on every single result, front and center. |
+| 📸 **Real Photos Only** | No gallery uploads. You have to go outside and take real photos — making every discovery genuinely earned and rewarding. |
 
 ---
 
-## 🚀 Quick Start
+## 🎯 Who Is UrPlant For?
 
-### Prerequisites
-- Node.js 20+, Flutter 3.24+, Firebase CLI
-- Plant.id API account
-- Firebase project with Blaze plan
-
-### Setup
-```bash
-# 1. Clone
-git clone https://github.com/keovoin/UrPlant.git
-cd UrPlant
-
-# 2. Follow the full setup guide
-# Open docs/SETUP_GUIDE.md for the complete step-by-step
-
-# 3. Quick overview:
-# Firebase init
-firebase init
-
-# Flutter mobile
-cd mobile && flutter pub get && flutter run
-
-# Cloud Functions
-cd functions && npm install && npm run build
-cd .. && firebase deploy --only functions
-
-# Admin Portal
-cd admin && npm install && npm run dev
-```
+- **Nature Enthusiasts** — Explore your neighborhood and learn what grows around you
+- **Gardeners & Plant Parents** — Get instant care guides for anything you're growing
+- **Travelers & Explorers** — Discover unfamiliar flora wherever you go
+- **Students & Educators** — Perfect for botany, agriculture, and environmental science
+- **Cambodian Families** — The first and only AI plant app with full Khmer language integration
 
 ---
 
-## 💰 Estimated Monthly Cost (MVP Scale)
+## 📱 How It Works
 
-| Service | Cost |
-|---------|------|
-| Firebase (Spark + Blaze) | $0-5 |
-| Plant.id API (500 credits) | ~$25 |
-| Self-hosted AI | $0 (existing) |
-| Apple Developer | $99/yr |
-| Google Play | $25 (one-time) |
-| **Total** | **~$34/mo** |
-
----
-
-## 🛠️ Tech Stack
-
-- **Mobile**: Flutter 3.24+, Riverpod, Camera Plugin, Material 3
-- **Backend**: Firebase Cloud Functions (Node.js 20/TypeScript), Firestore, Storage, Auth
-- **AI**: Plant.id API (identification) + Self-hosted AI (DeepSeek/OpenAI gateway — enrichment & KH translation)
-- **Admin**: React 18, Vite 5, Tailwind CSS 3.4, TanStack Query, Recharts
-- **CI/CD**: GitHub Actions
+<table>
+<tr>
+<td align="center"><strong>1. Snap</strong></td>
+<td align="center"><strong>2. Identify</strong></td>
+<td align="center"><strong>3. Discover</strong></td>
+</tr>
+<tr>
+<td align="center">Point your camera at any plant and take a photo right in the app. Real camera only — no gallery uploads.</td>
+<td align="center">Our AI analyzes your photo in seconds. It identifies the species, confidence level, and extracts rich botanical data.</td>
+<td align="center">Get the full profile: name, characteristics, origin, care guide, safety alerts, rarity, and fun facts — in English or Khmer.</td>
+</tr>
+</table>
 
 ---
 
-## 📊 MVP Scope
+## 🚀 What You Get
 
-| Phase | Timeline | Deliverables |
-|-------|----------|-------------|
-| Phase 1 | Week 1-2 | Flutter scaffold, Firebase setup, Auth, Localization |
-| Phase 2 | Week 3-4 | Camera, Cloud Functions, Plant.id integration |
-| Phase 3 | Week 5-6 | Plant DB, Encyclopedia, Collection/Unlock, Rarity system |
-| Phase 4 | Week 7 | Achievements, Celebrations, Profile |
-| Phase 5 | Week 8 | Admin Portal |
-| Phase 6 | Week 9-10 | KH polish, Testing, App Store submission |
+### Beautiful Onboarding
+A 3-page welcome experience with language selection — choose English or ភាសាខ្មែរ.
+
+### Smart Camera
+Pulsing scan overlay, flash control, live preview — designed to get the perfect plant shot.
+
+### Rich Results
+Structured plant profiles with gradient hero images, safety alerts, rarity badges, and confetti celebrations for new unlocks.
+
+### 4-Tab Experience
+**Home** · **Encyclopedia** · **History** · **Profile** — everything exactly where you expect it.
+
+### Achievements System
+Earn badges for milestones — First Scan, Rare Hunter, Plant Master, and more. Track progress, see what's locked, and chase that next achievement.
+
+### Offline History
+All your past discoveries saved locally on your device. Browse them anytime, no internet needed.
 
 ---
 
-## 📄 License
+## 🌏 Made in Cambodia. Built for the World.
 
-Proprietary — All rights reserved.
+UrPlant is proudly Cambodian — the first AI plant identification app with deep Khmer language integration. But we built it for everyone. Whether you're exploring the forests of Mondulkiri or the streets of New York, UrPlant speaks your language.
+
+**រុក្ខជាតិ — គ្រាន់តែថត និងស្វែងយល់**
 
 ---
 
-*Built with ❤️ for plant lovers in Cambodia and beyond.* 🇰🇭 🌏
+## 🔒 Your Privacy Matters
+
+- Photos are processed securely and never shared
+- Camera-only design means authentic, real-world exploration
+- Anti-spoofing ensures real effort is rewarded
+
+---
+
+## 📊 Trusted Technology
+
+UrPlant is powered by state-of-the-art AI vision models and runs on Firebase's global infrastructure — fast, reliable, and scalable.
+
+| Flutter | Firebase | OpenAI Vision | Cloud Functions | Firestore |
+
+---
+
+## 📲 Get UrPlant
+
+*Available now on the App Store and Google Play.*
+
+Join thousands of explorers discovering the world around them — one plant at a time.
+
+<br>
+
+<p align="center">
+  <strong>🌿 Discover the world around you. One plant at a time.</strong>
+</p>

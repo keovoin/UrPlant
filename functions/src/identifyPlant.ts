@@ -2,7 +2,8 @@
  * identifyPlant Cloud Function
  * 
  * Core endpoint — receives plant photo, identifies via AI provider,
- * checks against Firestore plant DB, handles unlock logic, awards XP,
+ * builds the plant profile directly from AI response (no Firestore plant DB lookup),
+ * handles unlock/duplicate logic via user_plants, awards XP,
  * evaluates achievements, writes audit log.
  */
 
@@ -17,13 +18,9 @@ import { validateImage, ExifData } from './utils/antiSpoofing.js';
 import { evaluateAchievements } from './utils/achievements.js';
 import { analyzeSafety, SafetyInfo } from './utils/safetyAnalyzer.js';
 import {
-  findPlantByScientificName,
   getUserById,
-  getUserPlant,
   incrementUserStats,
-  incrementPlantUnlockCount,
   createScanLog,
-  createOrUpdateUnverified,
   checkDailyScanLimit,
   incrementDailyScanCount,
   serverTimestamp,
@@ -45,6 +42,30 @@ const CONFIDENCE_THRESHOLD = 0.6;
 const XP_UNLOCK = 100;
 const XP_DUPLICATE = 50;
 const XP_UNMATCHED = 10;
+
+// ── Rarity distribution (since we don't look up from DB) ──────────
+function rollRarity(): 'normal' | 'rare' | 'special_rare' {
+  const r = Math.random();
+  if (r < 0.05) return 'special_rare';  // 5%
+  if (r < 0.20) return 'rare';           // 15%
+  return 'normal';                        // 80%
+}
+
+// ── Key helper: deterministic user_plant ID from species ──────────
+function userPlantKey(uid: string, scientificName: string): string {
+  const normalized = scientificName.trim().toLowerCase().replace(/\s+/g, '_');
+  return `${uid}_${normalized}`;
+}
+
+// ── Check if user already has this plant ──────────────────────────
+async function getUserPlantBySpecies(uid: string, scientificName: string): Promise<any | null> {
+  const key = userPlantKey(uid, scientificName);
+  const doc = await admin.firestore().collection('user_plants').doc(key).get();
+  if (doc.exists) {
+    return { id: doc.id, ...doc.data() };
+  }
+  return null;
+}
 
 // ─── Cloud Function ──────────────────────────────────────────────
 export const identifyPlant = functions
@@ -210,10 +231,7 @@ export const identifyPlant = functions
 
       console.log(`[identifyPlant] AI result: ${aiResult.species}, confidence: ${aiResult.confidence}, provider: ${aiResult.provider}`);
 
-      // 9. Close client connection quickly after AI call
-      // (enrichment and achievement evaluation done below)
-
-      // 10. Check confidence
+      // 9. Check confidence
       if (aiResult.confidence < CONFIDENCE_THRESHOLD) {
         // Log the attempt
         await createScanLog({
@@ -245,207 +263,42 @@ export const identifyPlant = functions
         return;
       }
 
-      // 11. Search Firestore for plant
-      const matchedPlant = await findPlantByScientificName(aiResult.species);
+      // 10. Build plant profile directly from AI result (NO database lookup)
+      const rarity = rollRarity();
+      const plantData = buildPlantFromAi(aiResult, photoUrl, thumbnailUrl, rarity);
 
-      if (matchedPlant) {
-        // ─── PLANT MATCHED ──────────────────────────────────────
-        const existingUserPlant = await getUserPlant(uid, matchedPlant.id);
+      // 11. Check if user already unlocked this plant (by species key in user_plants)
+      const existingUserPlant = await getUserPlantBySpecies(uid, aiResult.species);
 
-        if (existingUserPlant) {
-          // DUPLICATE — already unlocked
-          await incrementUserStats(uid, { total_scans: 1 });
-          await incrementDailyScanCount(uid);
+      // 12. Safety analysis
+      let safetyInfo: SafetyInfo | null = null;
+      try {
+        safetyInfo = await analyzeSafety(
+          plantData.name_en,
+          plantData.scientific_name,
+          aiResult.confidence
+        );
+      } catch (e: any) {
+        console.log('[Safety] Non-critical failure:', e.message);
+      }
 
-          // Increment sighting count
-          await admin.firestore()
-            .collection('user_plants')
-            .doc(`${uid}_${matchedPlant.id}`)
-            .update({
-              sighting_count: admin.firestore.FieldValue.increment(1),
-              last_seen_at: serverTimestamp(),
-              updated_at: serverTimestamp(),
-            });
-
-          const newAchievements = await evaluateAchievements(uid);
-          const userStats = await getUserById(uid);
-
-          // Safety analysis
-          let safetyInfo: SafetyInfo | null = null;
-          if (matchedPlant.scientific_name) {
-            try {
-              safetyInfo = await analyzeSafety(
-                matchedPlant.name_en || aiResult.species,
-                matchedPlant.scientific_name,
-                aiResult.confidence
-              );
-            } catch (e: any) {
-              console.log('[Safety] Non-critical failure:', e.message);
-            }
-          }
-
-          const scanLogId = await createScanLog({
-            user_id: uid,
-            photo_url: photoUrl,
-            thumbnail_url: thumbnailUrl,
-            plant_name: aiResult.species,
-            confidence: aiResult.confidence,
-            suggestions_json: aiResult.raw_response,
-            matched_plant_id: matchedPlant.id,
-            is_new_unlock: false,
-            xp_earned: XP_DUPLICATE,
-            achievement_ids_earned: newAchievements.map(a => a.id),
-            exif_valid: !spoofResult.isFlagged,
-            spoofing_flags: spoofResult.flags,
-            is_flagged: spoofResult.isFlagged,
-            device_model: parsed.fields.device_model || null,
-            app_version: parsed.fields.app_version || null,
-          });
-
-          const plantData = formatPlantResponse(matchedPlant, userLanguage, { characteristics: aiResult.characteristics, habitat: aiResult.habitat, uses: aiResult.uses });
-
-          res.status(200).json({
-            success: true,
-            plant: plantData,
-            is_new_unlock: false,
-            is_duplicate: true,
-            user_photo_url: photoUrl,
-            xp_earned: XP_DUPLICATE,
-            achievements_earned: newAchievements,
-            safety_info: safetyInfo,
-            user_stats: {
-              total_xp: userStats?.total_xp || 0,
-              level: userStats?.level || 1,
-              total_scans: userStats?.total_scans || 0,
-              plants_unlocked: userStats?.plants_unlocked || 0,
-            },
-            confidence: aiResult.confidence,
-            match_status: 'matched',
-            is_flagged: spoofResult.isFlagged,
-          });
-        } else {
-          // ─── NEW UNLOCK! ─────────────────────────────────────
-          const rarity = matchedPlant.rarity || 'normal';
-
-          // Create user_plant doc
-          await admin.firestore()
-            .collection('user_plants')
-            .doc(`${uid}_${matchedPlant.id}`)
-            .set({
-              user_id: uid,
-              plant_id: matchedPlant.id,
-              unlocked_at: serverTimestamp(),
-              rarity,
-              photo_url: photoUrl,
-              thumbnail_url: thumbnailUrl,
-              sighting_count: 1,
-              last_seen_at: serverTimestamp(),
-              created_at: serverTimestamp(),
-              updated_at: serverTimestamp(),
-            });
-
-          // Update user stats
-          await incrementUserStats(uid, {
-            total_xp: XP_UNLOCK,
-            total_scans: 1,
-            plants_unlocked: 1,
-            [`${rarity}_count`]: 1,
-          });
-
-          await incrementDailyScanCount(uid);
-          await incrementPlantUnlockCount(matchedPlant.id);
-
-          // Evaluate achievements + safety
-          const newAchievements = await evaluateAchievements(uid);
-          const userStats = await getUserById(uid);
-
-          let safetyInfo: SafetyInfo | null = null;
-          if (matchedPlant.scientific_name) {
-            try {
-              safetyInfo = await analyzeSafety(
-                matchedPlant.name_en || aiResult.species,
-                matchedPlant.scientific_name,
-                aiResult.confidence
-              );
-            } catch (e: any) {
-              console.log('[Safety] Non-critical failure on unlock:', e.message);
-            }
-          }
-
-          // Trigger enrichment if plant descriptions are sparse
-          const needsEnrichment = !matchedPlant.description_en || !matchedPlant.description_kh;
-          if (needsEnrichment) {
-            try {
-              const enrichFnUrl = `https://${req.headers.host}/enrichInfo`;
-              const axios = require('axios');
-              axios.post(enrichFnUrl, {
-                plant_id: matchedPlant.id,
-                plant_name: matchedPlant.name_en || aiResult.species,
-                scientific_name: matchedPlant.scientific_name || aiResult.species,
-                taxonomy: {
-                  family: matchedPlant.family || '',
-                  genus: matchedPlant.genus || '',
-                  species: matchedPlant.species || '',
-                },
-                confidence: aiResult.confidence,
-              }).catch((e: any) => console.log('[enrichInfo] Async trigger failed (non-critical):', e.message));
-            } catch {
-              // Non-critical — enrichment runs async
-            }
-          }
-
-          const scanLogId = await createScanLog({
-            user_id: uid,
-            photo_url: photoUrl,
-            thumbnail_url: thumbnailUrl,
-            plant_name: aiResult.species,
-            confidence: aiResult.confidence,
-            suggestions_json: aiResult.raw_response,
-            matched_plant_id: matchedPlant.id,
-            is_new_unlock: true,
-            xp_earned: XP_UNLOCK,
-            achievement_ids_earned: newAchievements.map(a => a.id),
-            exif_valid: !spoofResult.isFlagged,
-            spoofing_flags: spoofResult.flags,
-            is_flagged: spoofResult.isFlagged,
-            device_model: parsed.fields.device_model || null,
-            app_version: parsed.fields.app_version || null,
-          });
-
-          const plantData = formatPlantResponse(matchedPlant, userLanguage, { characteristics: aiResult.characteristics, habitat: aiResult.habitat, uses: aiResult.uses });
-
-          res.status(200).json({
-            success: true,
-            plant: plantData,
-            is_new_unlock: true,
-            is_duplicate: false,
-            user_photo_url: photoUrl,
-            xp_earned: XP_UNLOCK,
-            achievements_earned: newAchievements,
-            user_stats: {
-              total_xp: userStats?.total_xp || XP_UNLOCK,
-              level: userStats?.level || 1,
-              total_scans: userStats?.total_scans || 1,
-              plants_unlocked: userStats?.plants_unlocked || 1,
-            },
-            confidence: aiResult.confidence,
-            match_status: 'matched',
-            is_flagged: spoofResult.isFlagged,
-          });
-        }
-      } else {
-        // ─── NO MATCH — Unverified ──────────────────────────────
-        await incrementUserStats(uid, { total_xp: XP_UNMATCHED, total_scans: 1 });
+      if (existingUserPlant) {
+        // ─── DUPLICATE — already unlocked ─────────────────────────
+        await incrementUserStats(uid, { total_scans: 1 });
         await incrementDailyScanCount(uid);
 
-        await createOrUpdateUnverified({
-          scientific_name: aiResult.species,
-          common_names: aiResult.common_names,
-          suggestions_json: aiResult.raw_response,
-          user_id: uid,
-          photo_url: photoUrl,
-          confidence: aiResult.confidence,
-        });
+        // Increment sighting count
+        await admin.firestore()
+          .collection('user_plants')
+          .doc(userPlantKey(uid, aiResult.species))
+          .update({
+            sighting_count: admin.firestore.FieldValue.increment(1),
+            last_seen_at: serverTimestamp(),
+            updated_at: serverTimestamp(),
+          });
+
+        const newAchievements = await evaluateAchievements(uid);
+        const userStats = await getUserById(uid);
 
         const scanLogId = await createScanLog({
           user_id: uid,
@@ -454,10 +307,10 @@ export const identifyPlant = functions
           plant_name: aiResult.species,
           confidence: aiResult.confidence,
           suggestions_json: aiResult.raw_response,
-          matched_plant_id: null,
+          matched_plant_id: userPlantKey(uid, aiResult.species),
           is_new_unlock: false,
-          xp_earned: XP_UNMATCHED,
-          achievement_ids_earned: [],
+          xp_earned: XP_DUPLICATE,
+          achievement_ids_earned: newAchievements.map(a => a.id),
           exif_valid: !spoofResult.isFlagged,
           spoofing_flags: spoofResult.flags,
           is_flagged: spoofResult.isFlagged,
@@ -465,16 +318,15 @@ export const identifyPlant = functions
           app_version: parsed.fields.app_version || null,
         });
 
-        const userStats = await getUserById(uid);
-
         res.status(200).json({
           success: true,
-          plant: null,
+          plant: plantData,
           is_new_unlock: false,
-          is_duplicate: false,
+          is_duplicate: true,
           user_photo_url: photoUrl,
-          xp_earned: XP_UNMATCHED,
-          achievements_earned: [],
+          xp_earned: XP_DUPLICATE,
+          achievements_earned: newAchievements,
+          safety_info: safetyInfo,
           user_stats: {
             total_xp: userStats?.total_xp || 0,
             level: userStats?.level || 1,
@@ -482,9 +334,88 @@ export const identifyPlant = functions
             plants_unlocked: userStats?.plants_unlocked || 0,
           },
           confidence: aiResult.confidence,
-          match_status: 'unmatched',
-          message_en: 'Plant identified but not yet in our database. Our team will review it soon!',
-          message_kh: 'រុក្ខជាតិត្រូវបានកំណត់អត្តសញ្ញាណ ប៉ុន្តែមិនទាន់មានក្នុងមូលដ្ឋានទិន្នន័យរបស់យើងទេ។ ក្រុមការងាររបស់យើងនឹងពិនិត្យឡើងវិញក្នុងពេលឆាប់ៗនេះ!',
+          match_status: 'matched',
+          is_flagged: spoofResult.isFlagged,
+        });
+      } else {
+        // ─── NEW UNLOCK! ─────────────────────────────────────────
+        const upkKey = userPlantKey(uid, aiResult.species);
+
+        // Create user_plant doc
+        await admin.firestore()
+          .collection('user_plants')
+          .doc(upkKey)
+          .set({
+            user_id: uid,
+            plant_id: upkKey,
+            unlocked_at: serverTimestamp(),
+            rarity,
+            photo_url: photoUrl,
+            thumbnail_url: thumbnailUrl,
+            sighting_count: 1,
+            last_seen_at: serverTimestamp(),
+            ai_data: {
+              scientific_name: aiResult.species,
+              common_names: aiResult.common_names,
+              family: aiResult.taxonomy.family,
+              genus: aiResult.taxonomy.genus,
+              characteristics: aiResult.characteristics,
+              habitat: aiResult.habitat,
+              uses: aiResult.uses,
+            },
+            created_at: serverTimestamp(),
+            updated_at: serverTimestamp(),
+          });
+
+        // Update user stats
+        await incrementUserStats(uid, {
+          total_xp: XP_UNLOCK,
+          total_scans: 1,
+          plants_unlocked: 1,
+          [`${rarity}_count`]: 1,
+        });
+
+        await incrementDailyScanCount(uid);
+
+        // Evaluate achievements
+        const newAchievements = await evaluateAchievements(uid);
+        const userStats = await getUserById(uid);
+
+        const scanLogId = await createScanLog({
+          user_id: uid,
+          photo_url: photoUrl,
+          thumbnail_url: thumbnailUrl,
+          plant_name: aiResult.species,
+          confidence: aiResult.confidence,
+          suggestions_json: aiResult.raw_response,
+          matched_plant_id: upkKey,
+          is_new_unlock: true,
+          xp_earned: XP_UNLOCK,
+          achievement_ids_earned: newAchievements.map(a => a.id),
+          exif_valid: !spoofResult.isFlagged,
+          spoofing_flags: spoofResult.flags,
+          is_flagged: spoofResult.isFlagged,
+          device_model: parsed.fields.device_model || null,
+          app_version: parsed.fields.app_version || null,
+        });
+
+        res.status(200).json({
+          success: true,
+          plant: plantData,
+          is_new_unlock: true,
+          is_duplicate: false,
+          user_photo_url: photoUrl,
+          xp_earned: XP_UNLOCK,
+          achievements_earned: newAchievements,
+          safety_info: safetyInfo,
+          user_stats: {
+            total_xp: userStats?.total_xp || XP_UNLOCK,
+            level: userStats?.level || 1,
+            total_scans: userStats?.total_scans || 1,
+            plants_unlocked: userStats?.plants_unlocked || 1,
+          },
+          confidence: aiResult.confidence,
+          match_status: 'matched',
           is_flagged: spoofResult.isFlagged,
         });
       }
@@ -499,27 +430,44 @@ export const identifyPlant = functions
     }
   });
 
-// ─── Helper: Format plant data for API response ────────────────────
-function formatPlantResponse(plant: any, language: string, aiFields?: { characteristics?: string; habitat?: string; uses?: string }) {
-  const en = language !== 'kh';
+// ─── Helper: Build plant response from AI result ──────────────────
+function buildPlantFromAi(
+  aiResult: IdentificationResult,
+  photoUrl: string,
+  thumbnailUrl: string,
+  rarity: string,
+) {
+  const species = aiResult.species || 'Unknown';
+  const commonName = aiResult.common_names && aiResult.common_names.length > 0
+    ? aiResult.common_names[0]
+    : species;
 
   return {
-    id: plant.id,
-    name_en: plant.name_en || '',
-    name_kh: plant.name_kh || '',
-    scientific_name: plant.scientific_name || '',
-    family: plant.family || '',
-    genus: plant.genus || '',
-    species: plant.species || '',
-    rarity: plant.rarity || 'normal',
-    description: en ? (plant.description_en || '') : (plant.description_kh || plant.description_en || ''),
-    origin: en ? (plant.origin_en || '') : (plant.origin_kh || plant.origin_en || ''),
-    characteristics: en ? (plant.characteristics_en || aiFields?.characteristics || '') : (plant.characteristics_kh || aiFields?.characteristics || ''),
-    habitat: en ? (plant.habitat_en || aiFields?.habitat || '') : (plant.habitat_kh || aiFields?.habitat || ''),
-    uses: en ? (plant.uses_en || aiFields?.uses || '') : (plant.uses_kh || aiFields?.uses || ''),
-    care: en ? (plant.care_en || {}) : (plant.care_kh || plant.care_en || {}),
-    fun_facts: en ? (plant.fun_facts_en || []) : (plant.fun_facts_kh || plant.fun_facts_en || []),
-    image_url: plant.image_urls?.[0] || '',
-    thumbnail_url: plant.thumbnail_url || '',
+    id: species.trim().toLowerCase().replace(/\s+/g, '_'),
+    name_en: commonName,
+    name_kh: '',   // To be filled by enrichment or UI defaults to English
+    scientific_name: species,
+    family: aiResult.taxonomy?.family || '',
+    genus: aiResult.taxonomy?.genus || '',
+    species: aiResult.taxonomy?.species || '',
+    rarity,
+    description: aiResult.characteristics || '',
+    description_en: aiResult.characteristics || '',
+    description_kh: '',
+    origin: aiResult.habitat || '',
+    origin_en: aiResult.habitat || '',
+    origin_kh: '',
+    characteristics_en: aiResult.characteristics || '',
+    characteristics_kh: '',
+    habitat_en: aiResult.habitat || '',
+    habitat_kh: '',
+    uses_en: aiResult.uses || '',
+    uses_kh: '',
+    care_en: {},
+    care_kh: {},
+    fun_facts_en: [] as string[],
+    fun_facts_kh: [] as string[],
+    image_urls: [photoUrl],
+    thumbnail_url: thumbnailUrl,
   };
 }
