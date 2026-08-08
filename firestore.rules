@@ -74,8 +74,10 @@ service cloud.firestore {
     // UNVERIFIED_PLANTS (admin only)
     // ====================
     match /unverified_plants/{docId} {
-      allow read, write: if isAdmin();
+      allow read: if isAdmin();
       allow create: if isAuthenticated();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     // ====================
