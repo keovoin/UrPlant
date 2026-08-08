@@ -6,7 +6,6 @@ import 'package:shimmer/shimmer.dart';
 import '../../config/theme.dart';
 import '../../data/models/plant.dart';
 import '../camera/camera_screen.dart';
-import '../encyclopedia/encyclopedia_screen.dart';
 import '../plant_detail/plant_detail_screen.dart';
 import '../shell/app_shell.dart';
 

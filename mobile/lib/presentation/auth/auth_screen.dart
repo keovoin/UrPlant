@@ -41,14 +41,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         );
         await FirebaseAuth.instance.currentUser?.updateDisplayName(_nameCtrl.text.trim());
       }
-      // Navigate to main app on success
-      if (mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const AppShell()),
-          (route) => false,
-        );
-      }
+      // AuthGate's StreamBuilder(authStateChanges) will handle navigation.
+      // Just let setState(() => _loading = false) show the form briefly;
+      // Firebase auth state change triggers the StreamBuilder → AppShell automatically.
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
