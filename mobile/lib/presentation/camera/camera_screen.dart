@@ -189,50 +189,57 @@ class _CameraScreenState extends State<CameraScreen>
           // Camera preview
           CameraPreview(_controller!),
 
-          // Scanning overlay
-          Center(
-            child: AnimatedBuilder(
-              animation: _pulseAnim,
-              builder: (context, child) {
-                return Container(
-                  width: size.width * 0.85 * _pulseAnim.value,
-                  height: size.width * 0.85 * _pulseAnim.value,
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: UrPlantTheme.primaryLight.withValues(alpha: 0.4 * _pulseAnim.value),
-                      width: 2,
+          // Scanning overlay — positioned between top bar and capture button
+          Positioned(
+            top: 90,
+            bottom: 150,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: AnimatedBuilder(
+                animation: _pulseAnim,
+                builder: (context, child) {
+                  final overlaySize = (size.width * 0.8 * _pulseAnim.value).clamp(0.0, size.width * 0.85);
+                  return Container(
+                    width: overlaySize,
+                    height: overlaySize,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: UrPlantTheme.primaryLight.withValues(alpha: 0.4 * _pulseAnim.value),
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(28),
                     ),
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.eco,
-                        size: 48,
-                        color: UrPlantTheme.primaryLight.withValues(alpha: 0.25 * _pulseAnim.value),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'Frame the plant',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.5 * _pulseAnim.value),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.eco,
+                          size: 48,
+                          color: UrPlantTheme.primaryLight.withValues(alpha: 0.25 * _pulseAnim.value),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Make sure there\'s good lighting',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.3 * _pulseAnim.value),
-                          fontSize: 11,
+                        const SizedBox(height: 10),
+                        Text(
+                          'Frame the plant',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.5 * _pulseAnim.value),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              },
+                        const SizedBox(height: 4),
+                        Text(
+                          'Make sure there\'s good lighting',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.3 * _pulseAnim.value),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
           ),
 
