@@ -181,7 +181,32 @@ export async function checkDailyScanLimit(uid: string, tier = 'free'): Promise<{
 }
 
 export async function incrementDailyScanCount(uid: string) {
-  await usersCol().doc(uid).update({
+  const ref = usersCol().doc(uid);
+  const doc = await ref.get();
+  if (!doc.exists) {
+    // Create user doc if it doesn't exist yet (race with auth trigger)
+    await ref.set({
+      uid,
+      display_name: 'Explorer',
+      email: '',
+      language: 'en',
+      tier: 'free',
+      daily_scans_used: 1,
+      last_scan_date: new Date().toISOString().split('T')[0],
+      total_xp: 0,
+      level: 1,
+      total_scans: 0,
+      plants_unlocked: 0,
+      normal_count: 0,
+      rare_count: 0,
+      special_rare_count: 0,
+      achievements_earned: 0,
+      created_at: admin.firestore.FieldValue.serverTimestamp(),
+      last_active: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    return;
+  }
+  await ref.update({
     daily_scans_used: admin.firestore.FieldValue.increment(1),
     last_scan_date: new Date().toISOString().split('T')[0],
   });
