@@ -18,17 +18,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _pages = const [
     _PageData(
       icon: Icons.camera_alt_rounded,
+      image: 'assets/icons/app_icon.png',
       title: 'Discover Plants',
       body: 'Point your camera at any plant and UrPlant will identify it instantly.',
     ),
     _PageData(
       icon: Icons.language,
+      image: 'assets/icons/app_icon.png',
       title: 'Learn Everything',
       body:
           'Get detailed info, origin stories, care guides, and fun facts — in English or Khmer.',
     ),
     _PageData(
       icon: Icons.emoji_events,
+      image: 'assets/icons/app_icon.png',
       title: 'Build Your Collection',
       body:
           'Unlock rare and special plants. Earn achievements. Become a plant master!',
@@ -169,7 +172,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ),
               ],
             ),
-            child: Icon(data.icon, color: Colors.white, size: 56),
+            child: data.image != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.asset(data.image!, fit: BoxFit.cover),
+                  )
+                : Icon(data.icon, color: Colors.white, size: 56),
           ),
           const SizedBox(height: 40),
           Text(
@@ -229,7 +237,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
 class _PageData {
   final IconData icon;
+  final String? image;
   final String title;
   final String body;
-  const _PageData({required this.icon, required this.title, required this.body});
+  const _PageData({required this.icon, this.image, required this.title, required this.body});
 }
