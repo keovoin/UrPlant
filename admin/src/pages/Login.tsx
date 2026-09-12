@@ -23,20 +23,20 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-8">
+    <div className="flex min-h-screen items-center justify-center" style={{ background: 'var(--canvas)' }}>
+      <div className="w-full max-w-sm card shadow-card p-8 rise">
         <div className="text-center mb-6">
-          <span className="text-4xl">🌿</span>
-          <h1 className="text-2xl font-bold text-primary mt-2">UrPlant Admin</h1>
+          <span className="w-14 h-14 mx-auto grid place-items-center text-3xl rounded-2xl" style={{ background: 'var(--leaf-soft)' }}>🌿</span>
+          <h1 className="text-2xl font-black mt-3" style={{ color: 'var(--ink)' }}>UrPlant Admin</h1>
+          <p className="text-sm font-semibold mt-1.5" style={{ color: 'var(--ink-faint)' }}>Sign in with your admin account</p>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light" required />
+            className="input" required autoComplete="username" />
           <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light" required />
-          <button type="submit" disabled={loading}
-            className="w-full py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary-dark disabled:opacity-50">
-            {loading ? 'Signing in...' : 'Sign In'}
+            className="input" required autoComplete="current-password" />
+          <button type="submit" disabled={loading} className="btn-chunky w-full h-12 text-base disabled:opacity-50">
+            {loading ? 'Signing in…' : 'Sign In'}
           </button>
         </form>
       </div>

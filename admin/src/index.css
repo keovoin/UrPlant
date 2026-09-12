@@ -2,4 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
-body { @apply bg-gray-50 text-gray-900; }
+/* ── Forest Friend design tokens (matches mobile Playful Guide) ── */
+:root {
+  --canvas: #f6fbf6;
+  --ink: #14281b;
+  --ink-soft: #4b5f51;
+  --ink-faint: #93a699;
+  --line: #dde9de;
+  --leaf: #1b7a3d;
+  --leaf-dark: #12582b;
+  --leaf-edge: #0e4522;
+  --leaf-soft: #d8f0dc;
+  --gold: #f4a82c;
+  --gold-edge: #c77f0e;
+  --rare: #2e7de0;
+  --special: #7c4dff;
+  --danger: #e5484d;
+  --success: #2fae66;
+}
+
+body { background: var(--canvas); color: var(--ink); font-family: 'Nunito', 'Noto Sans Khmer', system-ui, sans-serif; }
+h1, h2, .font-display { font-family: 'Koulen', 'Nunito', 'Noto Sans Khmer', sans-serif; letter-spacing: 0.02em; }
+
+@layer components {
+  .card { @apply bg-white rounded-2xl border p-4; border-color: var(--line); }
+  .btn-chunky {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 h-10 text-sm font-extrabold text-white transition-all duration-100 select-none;
+    background: var(--leaf);
+    border: 1.5px solid var(--leaf-edge);
+    box-shadow: 0 4px 0 0 var(--leaf-edge);
+  }
+  .btn-chunky:hover { filter: brightness(1.05); }
+  .btn-chunky:active { transform: translateY(3px); box-shadow: 0 1px 0 0 var(--leaf-edge); }
+  .btn-chunky.gold { background: var(--gold); border-color: var(--gold-edge); box-shadow: 0 4px 0 0 var(--gold-edge); color: #3a2a05; }
+  .btn-chunky.gold:active { box-shadow: 0 1px 0 0 var(--gold-edge); }
+  .btn-quiet {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 h-10 text-sm font-bold transition-all;
+    background: white; color: var(--ink-soft); border: 1.5px solid var(--line);
+  }
+  .btn-quiet:hover { border-color: var(--leaf); color: var(--leaf-dark); }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 h-10 text-sm font-bold text-white transition-all;
+    background: var(--danger); border: 1.5px solid #b3282d; box-shadow: 0 4px 0 0 #b3282d;
+  }
+  .btn-danger:active { transform: translateY(3px); box-shadow: 0 1px 0 0 #b3282d; }
+  .pill { @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold; }
+  .pill-green { background: var(--leaf-soft); color: var(--leaf-dark); }
+  .pill-gold { background: #fbeeda; color: var(--gold-edge); }
+  .pill-blue { background: #ddebfd; color: #1b5bae; }
+  .pill-purple { background: #eae2fe; color: #5b32cc; }
+  .pill-red { background: #fde3e4; color: #b3282d; }
+  .pill-gray { background: #eef2ef; color: var(--ink-faint); }
+  .input {
+    @apply w-full rounded-xl px-4 h-11 bg-white text-sm font-semibold outline-none transition-all;
+    border: 1.5px solid var(--line); color: var(--ink);
+  }
+  .input:focus { border-color: var(--leaf); box-shadow: 0 0 0 3px var(--leaf-soft); }
+  .input::placeholder { color: var(--ink-faint); font-weight: 600; }
+  .th { @apply text-left text-[11px] uppercase tracking-wider font-extrabold px-3 py-2.5; color: var(--ink-faint); }
+  .td { @apply px-3 py-3 text-sm font-semibold; color: var(--ink-soft); }
+  .row-hover { @apply transition-colors; }
+  .row-hover:hover { background: #f2f8f2; }
+  .section-title { @apply text-lg font-black tracking-tight; color: var(--ink); }
+  .page-pad { @apply p-6 max-w-6xl mx-auto; }
+}
+
+/* smooth entrances */
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.rise { animation: rise .45s cubic-bezier(.2,.7,.3,1) both; }
+.rise-1 { animation-delay: .04s; } .rise-2 { animation-delay: .1s; }
+.rise-3 { animation-delay: .16s; } .rise-4 { animation-delay: .22s; }

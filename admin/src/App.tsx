@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { isAuthenticated, hasApiKey, setApiKey, logout } from './services/api';
 import LoginPage from './pages/Login';
 import DashboardPage from './pages/Dashboard';
@@ -10,13 +10,22 @@ import UserDetailPage from './pages/UserDetail';
 import ReviewUnverifiedPage from './pages/ReviewUnverified';
 import ReviewFlaggedPage from './pages/ReviewFlagged';
 
+const navItems = [
+  { to: '/', label: 'Dashboard', icon: '📊' },
+  { to: '/plants', label: 'Plants', icon: '🌿' },
+  { to: '/users', label: 'Users', icon: '👥' },
+  { to: '/review/unverified', label: 'Unverified', icon: '🔎' },
+  { to: '/review/flagged', label: 'Flagged', icon: '🚩' },
+];
+
 export default function App() {
   const [auth, setAuth] = useState(!!isAuthenticated());
   const [apiKeyReady, setApiKeyReady] = useState(hasApiKey());
+  const location = useLocation();
 
   useEffect(() => {
     setAuth(!!isAuthenticated());
-  }, [window.location.pathname]);
+  }, [location.pathname]);
 
   if (!apiKeyReady) {
     return <SetupPage onDone={() => setApiKeyReady(true)} />;
@@ -27,18 +36,33 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <aside className="w-56 bg-primary-dark text-white flex flex-col">
-        <div className="p-4 text-xl font-bold border-b border-green-900">🌿 UrPlant Admin</div>
-        <nav className="flex-1 py-2">
-          <a href="/" className="block px-4 py-2 text-sm text-green-200 hover:bg-green-800">Dashboard</a>
-          <a href="/plants" className="block px-4 py-2 text-sm text-green-200 hover:bg-green-800">Plants</a>
-          <a href="/users" className="block px-4 py-2 text-sm text-green-200 hover:bg-green-800">Users</a>
-          <a href="/review/unverified" className="block px-4 py-2 text-sm text-green-200 hover:bg-green-800">Unverified</a>
-          <a href="/review/flagged" className="block px-4 py-2 text-sm text-green-200 hover:bg-green-800">Flagged</a>
+    <div className="flex h-screen" style={{ background: 'var(--canvas)' }}>
+      <aside className="w-60 flex flex-col shrink-0 text-white" style={{ background: 'linear-gradient(180deg,#0F3D20 0%,#12582B 100%)' }}>
+        <div className="px-5 py-5 flex items-center gap-2.5 border-b border-white/10">
+          <span className="w-9 h-9 rounded-xl grid place-items-center text-lg" style={{ background: 'rgba(255,255,255,.14)' }}>🌿</span>
+          <div>
+            <div className="text-base font-black tracking-tight leading-tight">UrPlant</div>
+            <div className="text-[10px] font-bold tracking-widest uppercase opacity-60">Admin</div>
+          </div>
+        </div>
+        <nav className="flex-1 py-3 px-3 space-y-1">
+          {navItems.map(({ to, label, icon }) => {
+            const active = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
+            return (
+              <a key={to} href={to}
+                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                  active ? 'bg-white/15 text-white shadow-[inset_0_0_0_1.5px_rgba(244,168,44,.6)]' : 'text-green-100/70 hover:bg-white/8 hover:text-white'
+                }`}>
+                <span className="text-base">{icon}</span>{label}
+              </a>
+            );
+          })}
         </nav>
-        <div className="p-4 border-t border-green-900 text-sm">
-          <button onClick={() => { logout(); setAuth(false); window.location.href = '/'; }} className="text-green-300 hover:text-white">Logout</button>
+        <div className="p-4 border-t border-white/10">
+          <button onClick={() => { logout(); setAuth(false); window.location.href = '/'; }}
+            className="text-xs font-bold text-green-100/60 hover:text-white transition-colors">
+            ⎋ Sign out
+          </button>
         </div>
       </aside>
       <main className="flex-1 overflow-auto">
@@ -69,12 +93,12 @@ function SetupPage({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-8">
+    <div className="flex min-h-screen items-center justify-center" style={{ background: 'var(--canvas)' }}>
+      <div className="w-full max-w-sm card shadow-card p-8 rise">
         <div className="text-center mb-6">
-          <span className="text-4xl">🌿</span>
-          <h1 className="text-2xl font-bold text-primary mt-2">UrPlant Admin</h1>
-          <p className="text-sm text-gray-500 mt-2">Enter your Firebase Web API Key to start</p>
+          <span className="w-14 h-14 mx-auto grid place-items-center text-3xl rounded-2xl" style={{ background: 'var(--leaf-soft)' }}>🌿</span>
+          <h1 className="text-2xl font-black mt-3" style={{ color: 'var(--ink)' }}>UrPlant Admin</h1>
+          <p className="text-sm font-semibold mt-1.5" style={{ color: 'var(--ink-faint)' }}>Enter your Firebase Web API Key to start</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
@@ -82,13 +106,13 @@ function SetupPage({ onDone }: { onDone: () => void }) {
             placeholder="Firebase Web API Key"
             value={key}
             onChange={e => setKey(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light text-sm"
+            className="input"
             required
           />
-          <p className="text-xs text-gray-400">
-            Find it in Firebase Console → Project Settings → General → Web app → apiKey
+          <p className="text-xs leading-relaxed" style={{ color: 'var(--ink-faint)' }}>
+            Firebase Console → Project Settings → General → Web app → apiKey
           </p>
-          <button type="submit" className="w-full py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary-dark">
+          <button type="submit" className="btn-chunky w-full h-12 text-base">
             Continue
           </button>
         </form>
