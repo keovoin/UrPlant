@@ -18,19 +18,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboarding_title_1 => 'Discover Plants';
 
   @override
-  String get onboarding_body_1 => 'Point your camera at any plant and UrPlant will identify it instantly.';
+  String get onboarding_body_1 =>
+      'Point your camera at any plant and UrPlant will identify it instantly.';
 
   @override
   String get onboarding_title_2 => 'Learn Everything';
 
   @override
-  String get onboarding_body_2 => 'Get detailed info, origin stories, care guides, and fun facts — in English or Khmer.';
+  String get onboarding_body_2 =>
+      'Get detailed info, origin stories, care guides, and fun facts — in English or Khmer.';
 
   @override
   String get onboarding_title_3 => 'Build Your Collection';
 
   @override
-  String get onboarding_body_3 => 'Unlock rare and special plants. Earn achievements. Become a plant master!';
+  String get onboarding_body_3 =>
+      'Unlock rare and special plants. Earn achievements. Become a plant master!';
 
   @override
   String get onboarding_skip => 'Skip';
@@ -162,7 +165,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get result_unmatched_title => 'Plant Not in Database';
 
   @override
-  String get result_unmatched_body => 'Plant found but not in our database yet. We\'ll review it!';
+  String get result_unmatched_body =>
+      'Plant found but not in our database yet. We\'ll review it!';
 
   @override
   String result_xp_earned(Object xp) {
@@ -182,7 +186,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get plant_detail_sightings => 'Sightings';
 
   @override
-  String get plant_detail_locked_hint => 'Find this plant in the wild to unlock its secrets';
+  String get plant_detail_locked_hint =>
+      'Find this plant in the wild to unlock its secrets';
 
   @override
   String get plant_detail_section_details => 'Plant Details';
@@ -238,7 +243,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get encyclopedia_empty_title => 'Your collection is empty';
 
   @override
-  String get encyclopedia_empty_body => 'Start exploring! Take a photo of a plant to begin.';
+  String get encyclopedia_empty_body =>
+      'Start exploring! Take a photo of a plant to begin.';
 
   @override
   String get encyclopedia_locked_hint => 'Find to unlock';
@@ -324,4 +330,259 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get common_loading => 'Loading...';
+
+  @override
+  String get achievements_empty => 'Scan plants to earn achievements!';
+
+  @override
+  String get achievements_locked_hint => 'Keep exploring to reveal';
+
+  @override
+  String achievements_progress(Object earned, Object total) {
+    return '$earned of $total earned';
+  }
+
+  @override
+  String get achievements_signin_hint => 'Sign in to view achievements';
+
+  @override
+  String get camera_failed => 'Failed to take picture';
+
+  @override
+  String get camera_flash_auto => 'Auto';
+
+  @override
+  String get camera_flash_off => 'Off';
+
+  @override
+  String get camera_flash_on => 'Flash';
+
+  @override
+  String get camera_frame_hint => 'Frame the plant';
+
+  @override
+  String get camera_light_hint => 'Make sure there\'s good lighting';
+
+  @override
+  String get camera_opening => 'Opening camera…';
+
+  @override
+  String get camera_starting => 'Starting camera…';
+
+  @override
+  String get camera_take_picture => 'Take picture';
+
+  @override
+  String get camera_tip => 'Fill the frame with the plant for best results';
+
+  @override
+  String get care_humidity => 'Humidity';
+
+  @override
+  String get care_soil => 'Soil';
+
+  @override
+  String get care_sunlight => 'Sunlight';
+
+  @override
+  String get care_temperature => 'Temperature';
+
+  @override
+  String get care_water => 'Water';
+
+  @override
+  String get collection_progress_label => 'Progress to next level';
+
+  @override
+  String get common_error => 'Something went wrong';
+
+  @override
+  String get common_retry => 'Retry';
+
+  @override
+  String get common_share => 'Share';
+
+  @override
+  String get common_view => 'View';
+
+  @override
+  String get delete_account_warning =>
+      'This permanently deletes your account, discoveries, and history. This action cannot be undone.';
+
+  @override
+  String get detail_care_guide => 'Care Guide';
+
+  @override
+  String get detail_characteristics => 'Characteristics';
+
+  @override
+  String get detail_details => 'Plant Details';
+
+  @override
+  String get detail_discovered => 'Discovered';
+
+  @override
+  String get detail_discovery => 'Discovery';
+
+  @override
+  String detail_found_by(Object n) {
+    return '$n people discovered this';
+  }
+
+  @override
+  String get detail_fun_facts => 'Fun Facts';
+
+  @override
+  String get detail_habitat => 'Habitat';
+
+  @override
+  String get detail_humidity => 'Humidity';
+
+  @override
+  String get detail_join_them => 'Join them by finding it in the wild!';
+
+  @override
+  String get detail_locked_body =>
+      'Find this plant in the wild to unlock its secrets';
+
+  @override
+  String get detail_origin => 'Origin';
+
+  @override
+  String get detail_sightings => 'Sightings';
+
+  @override
+  String get detail_signin_hint => 'Sign in to view your collection';
+
+  @override
+  String get detail_soil => 'Soil';
+
+  @override
+  String get detail_sunlight => 'Sunlight';
+
+  @override
+  String get detail_tap_hint => 'Tap the photo to view full size';
+
+  @override
+  String get detail_temperature => 'Temperature';
+
+  @override
+  String get detail_uses => 'Uses';
+
+  @override
+  String get detail_water => 'Water';
+
+  @override
+  String get error_generic => 'Something went wrong. Please try again.';
+
+  @override
+  String get error_network =>
+      'Network error - check your connection and try again.';
+
+  @override
+  String get fact_amazon => 'The Amazon produces 20% of the world\'s oxygen.';
+
+  @override
+  String get fact_bamboo => 'Bamboo can grow up to 91cm in a single day!';
+
+  @override
+  String get fact_hear_water =>
+      'Some plants can \'hear\' running water and grow towards it.';
+
+  @override
+  String get fact_oldest_tree =>
+      'The world\'s oldest tree is over 4,800 years old.';
+
+  @override
+  String get fact_species =>
+      'There are over 390,000 known plant species on Earth.';
+
+  @override
+  String get fact_sunflower => 'A sunflower head can hold up to 2,000 seeds.';
+
+  @override
+  String get greeting_afternoon => 'Good afternoon';
+
+  @override
+  String get greeting_evening => 'Good evening';
+
+  @override
+  String get greeting_morning => 'Good morning';
+
+  @override
+  String get history_empty_body =>
+      'Scan your first plant to start your collection journal.';
+
+  @override
+  String get history_empty_title => 'No scans yet';
+
+  @override
+  String get history_status_matched => 'Matched';
+
+  @override
+  String get history_status_new => 'New species';
+
+  @override
+  String get history_status_pending => 'Processing';
+
+  @override
+  String get history_title => 'Scan History';
+
+  @override
+  String get identifying_did_you_know => 'Did you know?';
+
+  @override
+  String get identifying_slow => 'Taking longer than expected…';
+
+  @override
+  String get identifying_step_details => 'Gathering details...';
+
+  @override
+  String get identifying_tip_text =>
+      'Every plant has a story — leaves, flowers, and all.';
+
+  @override
+  String get nav_encyclopedia => 'Guide';
+
+  @override
+  String get nav_history => 'Scans';
+
+  @override
+  String get nav_home => 'Home';
+
+  @override
+  String get nav_profile => 'Me';
+
+  @override
+  String get nav_scan => 'Scan';
+
+  @override
+  String get onboarding_choose_language => 'Choose Language';
+
+  @override
+  String get plant_not_found => 'Plant not found';
+
+  @override
+  String get result_achievements_unlocked => 'Achievements Unlocked!';
+
+  @override
+  String get result_new_species_label => 'New Species';
+
+  @override
+  String get result_safety_notice => 'Safety Notice';
+
+  @override
+  String get result_safety_poisonous => 'Potentially Poisonous';
+
+  @override
+  String get result_tag_edible => 'Edible';
+
+  @override
+  String get result_tag_invasive => 'Invasive';
+
+  @override
+  String get result_tag_medicinal => 'Medicinal';
+
+  @override
+  String get result_tag_poisonous => 'Poisonous';
 }

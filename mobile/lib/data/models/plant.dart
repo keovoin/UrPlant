@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 class Plant {
   final String id;
@@ -17,6 +16,7 @@ class Plant {
   final Map<String, dynamic> care;
   final List<String> funFacts;
   final String imageUrl;
+  final int totalUnlocks;
   final String thumbnailUrl;
 
   Plant({
@@ -36,6 +36,7 @@ class Plant {
     this.care = const {},
     this.funFacts = const [],
     this.imageUrl = '',
+    this.totalUnlocks = 0,
     this.thumbnailUrl = '',
   });
 
@@ -57,7 +58,8 @@ class Plant {
     funFacts: data['fun_facts'] is List
         ? List<String>.from(data['fun_facts'].map((e) => e.toString()))
         : [],
-    imageUrl: data['image_url'] ?? '',
+    imageUrl: data['image_url'] ?? (data['image_urls'] is List && (data['image_urls'] as List).isNotEmpty ? (data['image_urls'] as List).first.toString() : ''),
+    totalUnlocks: (data['total_unlocks'] ?? 0) as int,
     thumbnailUrl: data['thumbnail_url'] ?? '',
   );
 
@@ -75,6 +77,7 @@ class UserPlant {
   final String photoUrl;
   final int sightingCount;
   final DateTime unlockedAt;
+  final List<String> commonNames;
 
   UserPlant({
     required this.plantId,
@@ -82,8 +85,18 @@ class UserPlant {
     this.thumbnailUrl = '',
     this.photoUrl = '',
     this.sightingCount = 0,
+    this.commonNames = const [],
     required this.unlockedAt,
   });
+
+  String get displayName => commonNames.isNotEmpty
+      ? commonNames.first
+      : plantId
+          .split(RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}'))
+          .last
+          .replaceAll(RegExp(r'^_+'), '')
+          .replaceAll('_', ' ')
+          .trim();
 
   factory UserPlant.fromMap(Map<String, dynamic> data) => UserPlant(
     plantId: data['plant_id'] ?? '',
@@ -91,6 +104,9 @@ class UserPlant {
     thumbnailUrl: data['thumbnail_url'] ?? '',
     photoUrl: data['photo_url'] ?? '',
     sightingCount: data['sighting_count'] ?? 0,
+    commonNames: (data['ai_data'] is Map && (data['ai_data'] as Map)['common_names'] is List)
+        ? List<String>.from(((data['ai_data'] as Map)['common_names'] as List).map((e) => e.toString()))
+        : const [],
     unlockedAt: (data['unlocked_at'] as dynamic)?.toDate() ?? DateTime.now(),
   );
 }

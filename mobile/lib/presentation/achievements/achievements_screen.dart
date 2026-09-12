@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
 
 class AchievementsScreen extends StatefulWidget {
   const AchievementsScreen({super.key});
@@ -20,13 +21,13 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
     if (uid == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Achievements')),
-        body: const Center(child: Text('Sign in to view achievements')),
+        appBar: AppBar(backgroundColor: UrPlantTheme.canvas, surfaceTintColor: Colors.transparent, elevation: 0, title: Text(AppLocalizations.of(context).achievements_title)),
+        body: Center(child: Text(AppLocalizations.of(context).achievements_signin_hint, style: TextStyle(color: UrPlantTheme.textSecondary))),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Achievements')),
+      appBar: AppBar(backgroundColor: UrPlantTheme.canvas, surfaceTintColor: Colors.transparent, elevation: 0, title: Text(AppLocalizations.of(context).achievements_title)),
       body: Column(
         children: [
           // Filter chips
@@ -34,11 +35,11 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
             child: Row(
               children: [
-                _modernFilterChip('All', 'all'),
+                _modernFilterChip(AppLocalizations.of(context).achievements_filter_all, 'all'),
                 const SizedBox(width: 8),
-                _modernFilterChip('Earned', 'earned'),
+                _modernFilterChip(AppLocalizations.of(context).achievements_filter_earned, 'earned'),
                 const SizedBox(width: 8),
-                _modernFilterChip('Locked', 'locked'),
+                _modernFilterChip(AppLocalizations.of(context).achievements_filter_locked, 'locked'),
               ],
             ),
           ),
@@ -56,7 +57,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                         Icon(Icons.emoji_events_outlined, size: 64,
                             color: UrPlantTheme.textTertiary.withValues(alpha: 0.4)),
                         const SizedBox(height: 12),
-                        const Text('No achievements yet',
+                        Text(AppLocalizations.of(context).achievements_empty,
                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500,
                                 color: UrPlantTheme.textSecondary)),
                       ],
@@ -205,7 +206,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 ),
                 const SizedBox(height: 3),
                 if (isHidden)
-                  const Text('Keep exploring to reveal',
+                  Text(AppLocalizations.of(context).achievements_locked_hint,
                       style: TextStyle(fontSize: 12, color: UrPlantTheme.textTertiary))
                 else ...[
                   Text(

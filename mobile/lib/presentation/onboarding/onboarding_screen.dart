@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../main.dart';
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -66,7 +67,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               alignment: Alignment.topRight,
               child: TextButton(
                 onPressed: _complete,
-                child: const Text('Skip'),
+                child: Text(AppLocalizations.of(context).onboarding_skip),
               ),
             ),
             Expanded(
@@ -101,11 +102,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
             // Language picker + Continue
             if (_page == _pages.length - 1) ...[
-              const Text(
-                'Choose Language',
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context).onboarding_choose_language,
+                style: const TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w800,
                     color: UrPlantTheme.textPrimary),
               ),
               const SizedBox(height: 12),
@@ -124,7 +125,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: _complete,
-                    child: const Text('Get Started'),
+                    child: Text(AppLocalizations.of(context).onboarding_get_started),
                   ),
                 ),
               ),
@@ -139,7 +140,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeInOut,
                     ),
-                    child: const Text('Next'),
+                    child: Text(AppLocalizations.of(context).onboarding_next),
                   ),
                 ),
               ),

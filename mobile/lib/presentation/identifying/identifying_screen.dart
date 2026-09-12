@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../data/services/api_service.dart';
 import '../../data/services/local_history_store.dart';
 import '../result/result_screen.dart';
@@ -23,15 +23,12 @@ class _IdentifyingScreenState extends State<IdentifyingScreen>
   int _step = 0;
   Timer? _timer;
   bool _timeout = false;
+  bool _navigated = false;
   late AnimationController _spinCtrl;
 
-  final _facts = [
-    "Bamboo can grow up to 91cm in a single day!",
-    "There are over 390,000 known plant species on Earth.",
-    "The world's oldest tree is over 4,800 years old.",
-    "A sunflower can have up to 2,000 seeds.",
-    "Some plants can 'hear' running water and grow towards it.",
-    "The Amazon produces 20% of the world's oxygen.",
+  static const _factKeys = [
+    'fact_bamboo', 'fact_species', 'fact_oldest_tree',
+    'fact_sunflower', 'fact_hear_water', 'fact_amazon',
   ];
 
   int _factIndex = 0;
@@ -41,10 +38,22 @@ class _IdentifyingScreenState extends State<IdentifyingScreen>
     super.initState();
     _spinCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 8),
     )..repeat();
     _startAnimation();
     _identify();
+  }
+
+  String _fact(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    switch (_factKeys[_factIndex]) {
+      case 'fact_bamboo': return l.fact_bamboo;
+      case 'fact_species': return l.fact_species;
+      case 'fact_oldest_tree': return l.fact_oldest_tree;
+      case 'fact_sunflower': return l.fact_sunflower;
+      case 'fact_hear_water': return l.fact_hear_water;
+      default: return l.fact_amazon;
+    }
   }
 
   void _saveToHistory(IdentifyResult result) {
@@ -62,15 +71,14 @@ class _IdentifyingScreenState extends State<IdentifyingScreen>
 
   void _startAnimation() {
     _timer = Timer.periodic(const Duration(milliseconds: 1800), (timer) {
-      if (mounted) {
-        setState(() {
-          _step = (_step + 1).clamp(0, 3);
-          _factIndex = (_factIndex + 1) % _facts.length;
-        });
-        if (timer.tick > 12) {
-          setState(() => _timeout = true);
-          timer.cancel();
-        }
+      if (!mounted) return;
+      setState(() {
+        _step = (_step + 1).clamp(0, 3);
+        _factIndex = (_factIndex + 1) % _factKeys.length;
+      });
+      if (timer.tick > 12) {
+        setState(() => _timeout = true);
+        timer.cancel();
       }
     });
   }
@@ -79,88 +87,99 @@ class _IdentifyingScreenState extends State<IdentifyingScreen>
     try {
       final result = await _apiService.identifyPlant(widget.imageBytes, null);
       _timer?.cancel();
-      _spinCtrl.dispose();
+      if (!mounted || _navigated) return;
+      _navigated = true;
 
       // Save to local history
       _saveToHistory(result);
 
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ResultScreen(
-              result: result,
-              imageBytes: widget.imageBytes,
-              imagePath: widget.imagePath,
-            ),
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ResultScreen(
+            result: result,
+            imageBytes: widget.imageBytes,
+            imagePath: widget.imagePath,
           ),
-        );
-      }
+        ),
+      );
     } catch (e) {
       _timer?.cancel();
-      _spinCtrl.dispose();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-        Navigator.pop(context);
-      }
+      if (!mounted || _navigated) return;
+      _navigated = true;
+      final l = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l.error_generic), backgroundColor: UrPlantTheme.error),
+      );
+      Navigator.pop(context);
     }
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    // Only dispose here — never inside _identify().
     _spinCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final stepLabels = [l.identifying_step_analyze, l.identifying_step_match, l.identifying_step_details];
+
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(gradient: UrPlantTheme.primaryGradient),
+        decoration: BoxDecoration(gradient: UrPlantTheme.heroGradient),
         child: SafeArea(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // User photo preview
+              // User photo preview inside a chunky polaroid tilt
               if (widget.imageBytes.length > 50)
-                Opacity(
-                  opacity: 0.35,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Image.memory(
-                      widget.imageBytes,
-                      width: 130,
-                      height: 130,
-                      fit: BoxFit.cover,
+                Transform.rotate(
+                  angle: -0.05,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: const [
+                        BoxShadow(color: Color(0x33000000), blurRadius: 18, offset: Offset(0, 8)),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.memory(
+                        widget.imageBytes,
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                 ),
-              const SizedBox(height: 36),
+              const SizedBox(height: 32),
 
-              // Animated spinning leaf
+              // Slow spinning leaf (no jitter; gentle)
               AnimatedBuilder(
                 animation: _spinCtrl,
                 builder: (context, child) {
                   return Transform.rotate(
                     angle: _spinCtrl.value * 2 * 3.14159,
-                    child: const Icon(Icons.eco, size: 64, color: Colors.white),
+                    child: const Icon(Icons.eco, size: 56, color: Colors.white),
                   );
                 },
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
 
-              // Title
-              const Text(
-                'Identifying your plant...',
-                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: -0.3),
+              Text(
+                l.identifying_title,
+                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.3),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
 
-              // Progress steps
-              _modernStep(0, 'Analyzing image...'),
-              _modernStep(1, 'Matching database...'),
-              _modernStep(2, 'Gathering details...'),
+              for (var i = 0; i < stepLabels.length; i++) _modernStep(i, stepLabels[i]),
 
               const Spacer(),
 
@@ -169,18 +188,23 @@ class _IdentifyingScreenState extends State<IdentifyingScreen>
                 margin: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
+                  color: Colors.white.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
                 ),
                 child: Column(
                   children: [
-                    const Text('Did you know?',
-                        style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500)),
+                    Text(l.identifying_did_you_know,
+                        style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.6)),
                     const SizedBox(height: 10),
-                    Text(
-                      _facts[_factIndex],
-                      style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.4),
-                      textAlign: TextAlign.center,
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 400),
+                      child: Text(
+                        _fact(context),
+                        key: ValueKey(_factIndex),
+                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600, height: 1.45),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ],
                 ),
@@ -188,18 +212,17 @@ class _IdentifyingScreenState extends State<IdentifyingScreen>
 
               if (_timeout)
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   child: Column(
                     children: [
-                      const Text('Taking longer than expected...',
-                          style: TextStyle(color: Colors.white70)),
-                      const SizedBox(height: 12),
+                      Text(l.identifying_slow, style: const TextStyle(color: Colors.white70)),
+                      const SizedBox(height: 8),
                       TextButton(
                         onPressed: () {
                           _timer?.cancel();
-                          Navigator.pop(context);
+                          if (mounted) Navigator.pop(context);
                         },
-                        child: const Text('Cancel', style: TextStyle(color: Colors.white)),
+                        child: Text(l.common_cancel, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
                       ),
                     ],
                   ),
@@ -232,7 +255,7 @@ class _IdentifyingScreenState extends State<IdentifyingScreen>
               ),
             ),
             child: active
-                ? const Icon(Icons.check, size: 14, color: UrPlantTheme.primaryMedium)
+                ? const Icon(Icons.check, size: 14, color: UrPlantTheme.primaryDark)
                 : null,
           ),
           const SizedBox(width: 14),
@@ -241,7 +264,7 @@ class _IdentifyingScreenState extends State<IdentifyingScreen>
             style: TextStyle(
               color: active ? Colors.white : Colors.white60,
               fontSize: 14,
-              fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+              fontWeight: active ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
         ],

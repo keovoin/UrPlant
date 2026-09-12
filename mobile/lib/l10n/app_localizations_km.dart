@@ -18,19 +18,22 @@ class AppLocalizationsKm extends AppLocalizations {
   String get onboarding_title_1 => 'ស្វែងរករុក្ខជាតិ';
 
   @override
-  String get onboarding_body_1 => 'ចង្អុលកាមេរ៉ារបស់អ្នកទៅកាន់រុក្ខជាតិណាមួយ ហើយ UrPlant នឹងកំណត់អត្តសញ្ញាណវាភ្លាមៗ។';
+  String get onboarding_body_1 =>
+      'ចង្អុលកាមេរ៉ារបស់អ្នកទៅកាន់រុក្ខជាតិណាមួយ ហើយ UrPlant នឹងកំណត់អត្តសញ្ញាណវាភ្លាមៗ។';
 
   @override
   String get onboarding_title_2 => 'រៀនអ្វីៗទាំងអស់';
 
   @override
-  String get onboarding_body_2 => 'ទទួលបានព័ត៌មានលម្អិត រឿងរ៉ាវប្រភពដើម ការណែនាំថែទាំ និងការពិតគួរឱ្យចាប់អារម្មណ៍ — ជាភាសាអង់គ្លេស ឬភាសាខ្មែរ។';
+  String get onboarding_body_2 =>
+      'ទទួលបានព័ត៌មានលម្អិត រឿងរ៉ាវប្រភពដើម ការណែនាំថែទាំ និងការពិតគួរឱ្យចាប់អារម្មណ៍ — ជាភាសាអង់គ្លេស ឬភាសាខ្មែរ។';
 
   @override
   String get onboarding_title_3 => 'បង្កើតការប្រមូលរបស់អ្នក';
 
   @override
-  String get onboarding_body_3 => 'ដោះសោរុក្ខជាតិកម្រ និងពិសេស។ ទទួលបានសមិទ្ធផល។ ក្លាយជាម្ចាស់រុក្ខជាតិ!';
+  String get onboarding_body_3 =>
+      'ដោះសោរុក្ខជាតិកម្រ និងពិសេស។ ទទួលបានសមិទ្ធផល។ ក្លាយជាម្ចាស់រុក្ខជាតិ!';
 
   @override
   String get onboarding_skip => 'រំលង';
@@ -162,7 +165,8 @@ class AppLocalizationsKm extends AppLocalizations {
   String get result_unmatched_title => 'រុក្ខជាតិមិនមានក្នុងមូលដ្ឋានទិន្នន័យ';
 
   @override
-  String get result_unmatched_body => 'រកឃើញរុក្ខជាតិ ប៉ុន្តែមិនទាន់មានក្នុងមូលដ្ឋានទិន្នន័យរបស់យើងទេ។ យើងនឹងពិនិត្យឡើងវិញ!';
+  String get result_unmatched_body =>
+      'រកឃើញរុក្ខជាតិ ប៉ុន្តែមិនទាន់មានក្នុងមូលដ្ឋានទិន្នន័យរបស់យើងទេ។ យើងនឹងពិនិត្យឡើងវិញ!';
 
   @override
   String result_xp_earned(Object xp) {
@@ -182,7 +186,8 @@ class AppLocalizationsKm extends AppLocalizations {
   String get plant_detail_sightings => 'ការមើលឃើញ';
 
   @override
-  String get plant_detail_locked_hint => 'ស្វែងរករុក្ខជាតិនេះនៅក្នុងធម្មជាតិដើម្បីដោះសោអាថ៌កំបាំងរបស់វា';
+  String get plant_detail_locked_hint =>
+      'ស្វែងរករុក្ខជាតិនេះនៅក្នុងធម្មជាតិដើម្បីដោះសោអាថ៌កំបាំងរបស់វា';
 
   @override
   String get plant_detail_section_details => 'ព័ត៌មានលម្អិតរុក្ខជាតិ';
@@ -238,7 +243,8 @@ class AppLocalizationsKm extends AppLocalizations {
   String get encyclopedia_empty_title => 'ការប្រមូលរបស់អ្នកទទេ';
 
   @override
-  String get encyclopedia_empty_body => 'ចាប់ផ្តើមរុករក! ថតរូបរុក្ខជាតិដើម្បីចាប់ផ្តើមការប្រមូលរបស់អ្នក។';
+  String get encyclopedia_empty_body =>
+      'ចាប់ផ្តើមរុករក! ថតរូបរុក្ខជាតិដើម្បីចាប់ផ្តើមការប្រមូលរបស់អ្នក។';
 
   @override
   String get encyclopedia_locked_hint => 'ស្វែងរកដើម្បីដោះសោ';
@@ -324,4 +330,259 @@ class AppLocalizationsKm extends AppLocalizations {
 
   @override
   String get common_loading => 'កំពុងផ្ទុក...';
+
+  @override
+  String get achievements_empty => 'ស្កេនរុក្ខជាតិ ដើម្បីប្រមូលសមិទ្ធផល!';
+
+  @override
+  String get achievements_locked_hint => 'បន្តរកស៊ើប ដើម្បីបើកមើល';
+
+  @override
+  String achievements_progress(Object earned, Object total) {
+    return 'បាន $earned ពី $total';
+  }
+
+  @override
+  String get achievements_signin_hint => 'ចូលគណនីដើម្បីមើលសមិទ្ធផល';
+
+  @override
+  String get camera_failed => 'ការថតរូបបានបរាជ័យ';
+
+  @override
+  String get camera_flash_auto => 'ស្វ័យប្រវត្តិ';
+
+  @override
+  String get camera_flash_off => 'បិទ';
+
+  @override
+  String get camera_flash_on => 'ភ្លើងស្វាយ';
+
+  @override
+  String get camera_frame_hint => 'ដាក់ដើមឈើឱ្យស្ថិតក្នុងក្រប';
+
+  @override
+  String get camera_light_hint => 'ត្រួតពិនិត្យថាមានពន្លឺគ្រប់គ្រាន់';
+
+  @override
+  String get camera_opening => 'កំពុងបើកកាមេរ៉ា…';
+
+  @override
+  String get camera_starting => 'កំពុងបើកកាមេរ៉ា…';
+
+  @override
+  String get camera_take_picture => 'ថតរូប';
+
+  @override
+  String get camera_tip => 'ដាក់រុក្ខជាតិឱ្យពេញក្នុងបាគង ដើម្បីលទ្ធផលល្អបំផុត';
+
+  @override
+  String get care_humidity => 'សំណើម';
+
+  @override
+  String get care_soil => 'ដី';
+
+  @override
+  String get care_sunlight => 'ពន្លឺថ្ងៃ';
+
+  @override
+  String get care_temperature => 'សីតុណ្ហភាព';
+
+  @override
+  String get care_water => 'ទឹក';
+
+  @override
+  String get collection_progress_label => 'ជឿនលឿនទៅកម្រិតបន្ទាប់';
+
+  @override
+  String get common_error => 'មានបញ្ហាកើតឡើង';
+
+  @override
+  String get common_retry => 'សាកល្បងម្ដងទៀត';
+
+  @override
+  String get common_share => 'ចែករំលែក';
+
+  @override
+  String get common_view => 'មើល';
+
+  @override
+  String get delete_account_warning =>
+      'ការនេះនឹងលុបគណនី ការស្វែងរក និងប្រវត្តិទាំងអស់របស់អ្នកជាអចិន្ត្រៃយ៍។ ការនេះមិនអាចត្រឡប់មកវិញបានទេ។';
+
+  @override
+  String get detail_care_guide => 'ការណែនាំថែទាំ';
+
+  @override
+  String get detail_characteristics => 'លក្ខណៈពិសេស';
+
+  @override
+  String get detail_details => 'ព័ត៌មានលម្អិត';
+
+  @override
+  String get detail_discovered => 'បានរកឃើញ';
+
+  @override
+  String get detail_discovery => 'ការរកឃើញ';
+
+  @override
+  String detail_found_by(Object n) {
+    return 'មនុស្ស $n នាក់បានរកឃើញ';
+  }
+
+  @override
+  String get detail_fun_facts => 'រឿងចាប់អារម្មណ៍';
+
+  @override
+  String get detail_habitat => 'ទីជាក់រស់នៅ';
+
+  @override
+  String get detail_humidity => 'សំណើម';
+
+  @override
+  String get detail_join_them => 'ចូលរួមជាមួយពួកគេ ដោយរកវាក្នុងធម្មជាតិ!';
+
+  @override
+  String get detail_locked_body =>
+      'រករុក្ខជាតិនេះក្នុងធម្មជាតិ ដើម្បីដោះសោរឿងរ៉ាវរបស់វា';
+
+  @override
+  String get detail_origin => 'ដើកំណើត';
+
+  @override
+  String get detail_sightings => 'ចំនួនបានឃើញ';
+
+  @override
+  String get detail_signin_hint => 'ចូលគណនីដើម្បីមើលការប្រមូលរបស់អ្នក';
+
+  @override
+  String get detail_soil => 'ដី';
+
+  @override
+  String get detail_sunlight => 'ពន្លឺថ្ងៃ';
+
+  @override
+  String get detail_tap_hint => 'ចុចរូបភាពដើម្បីមើលទំហំពេញ';
+
+  @override
+  String get detail_temperature => 'សីតុណ្ហភាព';
+
+  @override
+  String get detail_uses => 'ការប្រើប្រាស់';
+
+  @override
+  String get detail_water => 'ទឹក';
+
+  @override
+  String get error_generic => 'មានបញ្ហាកើតឡើង។ សូមព្យាយាមម្តងទៀត។';
+
+  @override
+  String get error_network => 'បញ្ហាបណ្តាញ - សូមពិនិត្យការតភ្ជាប់របស់អ្នក។';
+
+  @override
+  String get fact_amazon => 'ព្រៃអេម៉ាស្សនផលិតអុកស៊ីសែន ២០% នៃពិភពលោក។';
+
+  @override
+  String get fact_bamboo =>
+      'ឫស្សីអាចលូតលាស់បានដល់ទៅ ៩១ សង់ទីម៉ែត្រក្នុងមួយថ្ងៃ!';
+
+  @override
+  String get fact_hear_water =>
+      'ដើមឈើមួយចំនួនអាច«ស្តាប់»ឮសំឡេងទឹកហូរ ហើយលូតលាស់ទៅរកវា។';
+
+  @override
+  String get fact_oldest_tree =>
+      'ដើមឈើចាស់ជាងគេលើពិភពលោកមានអាយុលើសពី ៤,៨០០ ឆ្នាំ។';
+
+  @override
+  String get fact_species => 'មានប្រភេទដើមឈើសរុបជាង ៣៩០,០០០ នៅលើពិភពលោក។';
+
+  @override
+  String get fact_sunflower =>
+      'ផ្កាឈូករ័ត្នមួយក្បាលអាចមានគ្រាប់ច្រើនដល់ ២,០០០។';
+
+  @override
+  String get greeting_afternoon => 'សួស្តីរសៀល';
+
+  @override
+  String get greeting_evening => 'សួស្តីល្ងាច';
+
+  @override
+  String get greeting_morning => 'អរុណសួស្តី';
+
+  @override
+  String get history_empty_body =>
+      'ស្កេនដើមឈើដំបូងរបស់អ្នក ដើម្បីចាប់ផ្តើមសៀវភៅកំណត់ហេតុស្កេន។';
+
+  @override
+  String get history_empty_title => 'មិនទាន់មានការស្កេន';
+
+  @override
+  String get history_status_matched => 'បានផ្គូផ្គង';
+
+  @override
+  String get history_status_new => 'ប្រភេទថ្មី';
+
+  @override
+  String get history_status_pending => 'កំពុងដំណើរការ';
+
+  @override
+  String get history_title => 'ប្រវត្តិការស្កេន';
+
+  @override
+  String get identifying_did_you_know => 'តើអ្នកធ្លាប់ដឹងទេ?';
+
+  @override
+  String get identifying_slow => 'យូរជាងរង់ចាំ…';
+
+  @override
+  String get identifying_step_details => 'កំពុងប្រមូលព័ត៌មានលម្អិត...';
+
+  @override
+  String get identifying_tip_text =>
+      'រុក្ខជាតិទាំងអស់មានរឿងរ៉ាវ — ស៛ឺ ផ្ក និងអ្វីៗទាំងអស់។';
+
+  @override
+  String get nav_encyclopedia => 'មគ្គុទ្ទេសក៍';
+
+  @override
+  String get nav_history => 'ការស្កេន';
+
+  @override
+  String get nav_home => 'ទំព័រដើម';
+
+  @override
+  String get nav_profile => 'ខ្ញុំ';
+
+  @override
+  String get nav_scan => 'ស្កេន';
+
+  @override
+  String get onboarding_choose_language => 'ជ្រើសរើសភាសា';
+
+  @override
+  String get plant_not_found => 'រកមិនឃើញរុក្ខជាតិ';
+
+  @override
+  String get result_achievements_unlocked => 'បានដោះសោសមិទ្ធផល!';
+
+  @override
+  String get result_new_species_label => 'ប្រភេទថ្មី';
+
+  @override
+  String get result_safety_notice => 'សេចក្តីជូនដំណឹងសុវត្ថិភាព';
+
+  @override
+  String get result_safety_poisonous => 'អាចមានសារធាតុពិស';
+
+  @override
+  String get result_tag_edible => 'អាចបរិភោគបាន';
+
+  @override
+  String get result_tag_invasive => 'ប្រភេទឆ្លងកាត់';
+
+  @override
+  String get result_tag_medicinal => 'ធ្វើជាថ្នាំ';
+
+  @override
+  String get result_tag_poisonous => 'មានពិស';
 }

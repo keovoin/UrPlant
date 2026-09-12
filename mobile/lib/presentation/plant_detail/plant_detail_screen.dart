@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../data/models/plant.dart';
 
 class PlantDetailScreen extends StatefulWidget {
@@ -63,6 +64,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     if (_loading) {
       return Scaffold(
         appBar: AppBar(),
@@ -83,7 +85,19 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
       );
     }
     if (_plant == null) {
-      return Scaffold(appBar: AppBar(title: const Text('Plant')), body: const Center(child: Text('Plant not found')));
+      final l0 = AppLocalizations.of(context);
+      return Scaffold(
+        backgroundColor: UrPlantTheme.canvas,
+        appBar: AppBar(backgroundColor: UrPlantTheme.canvas, surfaceTintColor: Colors.transparent, elevation: 0),
+        body: Center(
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(Icons.eco_rounded, size: 56, color: UrPlantTheme.inkFaint.withValues(alpha: 0.4)),
+            const SizedBox(height: 12),
+            Text(l0.plant_not_found,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: UrPlantTheme.inkSoft)),
+          ]),
+        ),
+      );
     }
 
     final plant = _plant!;
@@ -124,19 +138,19 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
               const SizedBox(height: 16),
               if (_recentDiscoverers.isNotEmpty) ...[_recentDiscoverersSection(), const SizedBox(height: 16)],
               if (!isUnlocked) _lockedCard() else ...[
-                if (plant.description.isNotEmpty) ...[_modernSection('Plant Details'), const SizedBox(height: 8),
+                if (plant.description.isNotEmpty) ...[_modernSection(l.detail_details), const SizedBox(height: 8),
                   Text(plant.description, style: const TextStyle(fontSize: 14, height: 1.7, color: UrPlantTheme.textSecondary)), const SizedBox(height: 24)],
-                if (plant.origin.isNotEmpty) ...[_modernSection('Origin'), const SizedBox(height: 8),
+                if (plant.origin.isNotEmpty) ...[_modernSection(l.detail_origin), const SizedBox(height: 8),
                   Text(plant.origin, style: const TextStyle(fontSize: 14, color: UrPlantTheme.textSecondary)), const SizedBox(height: 24)],
-                if (plant.characteristics.isNotEmpty) ...[_modernSection('Characteristics'), const SizedBox(height: 8),
+                if (plant.characteristics.isNotEmpty) ...[_modernSection(l.detail_characteristics), const SizedBox(height: 8),
                   Text(plant.characteristics, style: const TextStyle(fontSize: 14, height: 1.6, color: UrPlantTheme.textSecondary)), const SizedBox(height: 24)],
-                if (plant.habitat.isNotEmpty) ...[_modernSection('Habitat'), const SizedBox(height: 8),
+                if (plant.habitat.isNotEmpty) ...[_modernSection(l.detail_habitat), const SizedBox(height: 8),
                   Text(plant.habitat, style: const TextStyle(fontSize: 14, color: UrPlantTheme.textSecondary)), const SizedBox(height: 24)],
-                if (plant.uses.isNotEmpty) ...[_modernSection('Uses'), const SizedBox(height: 8),
+                if (plant.uses.isNotEmpty) ...[_modernSection(l.detail_uses), const SizedBox(height: 8),
                   Text(plant.uses, style: const TextStyle(fontSize: 14, color: UrPlantTheme.textSecondary)), const SizedBox(height: 24)],
-                if (plant.care.isNotEmpty) ...[_modernSection('Care Guide'), const SizedBox(height: 12),
+                if (plant.care.isNotEmpty) ...[_modernSection(l.detail_care_guide), const SizedBox(height: 12),
                   ..._careTiles(plant.care), const SizedBox(height: 24)],
-                if (_userPlant != null) ...[_modernSection('Discovery'), const SizedBox(height: 8),
+                if (_userPlant != null) ...[_modernSection(l.detail_discovery), const SizedBox(height: 8),
                   Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: UrPlantTheme.surfaceCard, borderRadius: BorderRadius.circular(14), border: Border.all(color: UrPlantTheme.divider.withValues(alpha: 0.5))),
                     child: Row(children: [
                       _miniStat('Discovered', '${_userPlant!.unlockedAt.year}-${_userPlant!.unlockedAt.month.toString().padLeft(2,'0')}-${_userPlant!.unlockedAt.day.toString().padLeft(2,'0')}'),
@@ -160,19 +174,19 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
             child: Center(child: Icon(Icons.person, size: 16, color: UrPlantTheme.primaryMedium.withValues(alpha: 0.6)))))))),
       const SizedBox(width: 12),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('${_recentDiscoverers.length} people discovered this', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: UrPlantTheme.textPrimary)),
-        const SizedBox(height: 2), Text('Join them by finding it in the wild!', style: const TextStyle(fontSize: 11, color: UrPlantTheme.textTertiary))])),
+        Text(AppLocalizations.of(context).detail_found_by(_recentDiscoverers.length), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: UrPlantTheme.textPrimary)),
+        const SizedBox(height: 2), Text(AppLocalizations.of(context).detail_join_them, style: const TextStyle(fontSize: 11, color: UrPlantTheme.textTertiary))])),
     ]));
 
   Widget _miniStat(String label, String value) => Expanded(child: Column(children: [
     Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: UrPlantTheme.textPrimary)),
     Text(label, style: const TextStyle(fontSize: 11, color: UrPlantTheme.textTertiary))]));
 
-  Widget _modernSection(String text) => Text(text, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: UrPlantTheme.textPrimary, letterSpacing: -0.3));
+  Widget _modernSection(String text) => Text(text, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: UrPlantTheme.ink, letterSpacing: -0.3));
 
   List<Widget> _careTiles(Map<String, dynamic> care) {
     const keys = ['water', 'sunlight', 'soil', 'temperature', 'humidity'];
-    const labels = {'water': 'Water', 'sunlight': 'Sunlight', 'soil': 'Soil', 'temperature': 'Temperature', 'humidity': 'Humidity'};
+    final labels = {'water': AppLocalizations.of(context).detail_water, 'sunlight': AppLocalizations.of(context).detail_sunlight, 'soil': AppLocalizations.of(context).detail_soil, 'temperature': AppLocalizations.of(context).detail_temperature, 'humidity': AppLocalizations.of(context).detail_humidity};
     return keys.where((k) => care[k] != null && care[k].toString().isNotEmpty).map((k) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Row(children: [
       SizedBox(width: 120, child: Text(labels[k]!, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: UrPlantTheme.textPrimary))),
       Expanded(child: Text(care[k].toString(), style: const TextStyle(fontSize: 14, color: UrPlantTheme.textSecondary)))]))).toList();
@@ -188,7 +202,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
   Widget _lockedCard() => Container(width: double.infinity, padding: const EdgeInsets.all(40), decoration: BoxDecoration(color: UrPlantTheme.surfaceCard, borderRadius: BorderRadius.circular(20), border: Border.all(color: UrPlantTheme.divider.withValues(alpha: 0.5))),
     child: Column(children: [Container(width: 64, height: 64, decoration: BoxDecoration(color: UrPlantTheme.textTertiary.withValues(alpha: 0.1), shape: BoxShape.circle),
       child: Icon(Icons.lock_outline, size: 32, color: UrPlantTheme.textTertiary.withValues(alpha: 0.5))),
-      const SizedBox(height: 16), const Text('Find this plant in the wild to unlock its secrets', textAlign: TextAlign.center, style: TextStyle(fontSize: 15, color: UrPlantTheme.textTertiary, height: 1.4))]));
+      const SizedBox(height: 16), Text(AppLocalizations.of(context).detail_locked_body, textAlign: TextAlign.center, style: TextStyle(fontSize: 15, color: UrPlantTheme.textTertiary, height: 1.4))]));
 
   Widget _lockedOverlay() => Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
     Container(width: 72, height: 72, decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.4), shape: BoxShape.circle), child: const Icon(Icons.lock_outline, color: Colors.white, size: 36)),

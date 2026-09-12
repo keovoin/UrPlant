@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../config/theme.dart';
 import '../../data/models/plant.dart';
+import '../../l10n/app_localizations.dart';
 import '../camera/camera_screen.dart';
 import '../plant_detail/plant_detail_screen.dart';
 import '../shell/app_shell.dart';
@@ -12,366 +13,388 @@ import '../shell/app_shell.dart';
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
-  String _greeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
+    final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final h = DateTime.now().hour;
+    final greet = h < 12 ? l.greeting_morning : (h < 17 ? l.greeting_afternoon : l.greeting_evening);
+    final emoji = h < 12 ? '☀️' : (h < 17 ? '🌤️' : '🌙');
 
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
+      backgroundColor: UrPlantTheme.canvas,
+      body: RefreshIndicator(
+        color: UrPlantTheme.primary,
+        onRefresh: () async {},
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 150),
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                gradient: UrPlantTheme.primaryGradient,
-                borderRadius: BorderRadius.circular(10),
+            // ── Brand row ──────────────────────────────────────
+            StaggerIn(index: 0, child: Row(children: [
+              Container(
+                width: 34, height: 34,
+                decoration: BoxDecoration(
+                  gradient: UrPlantTheme.leafGradient,
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: const Icon(Icons.eco_rounded, color: Colors.white, size: 19),
               ),
-              child: const Icon(Icons.eco, color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 10),
-            const Text('UrPlant'),
+              const SizedBox(width: 9),
+              Text(l.app_name, style: theme.textTheme.titleLarge),
+              const Spacer(),
+            ])),
+            const SizedBox(height: 16),
+
+            // ── Greeting ───────────────────────────────────────
+            StaggerIn(index: 1, child: Row(children: [
+              Text('$emoji  ', style: const TextStyle(fontSize: 18)),
+              Flexible(child: Text(greet, maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700))),
+            ])),
+            const SizedBox(height: 2),
+            StaggerIn(index: 2, child: Text(l.home_hero_title, style: theme.textTheme.headlineMedium)),
+            const SizedBox(height: 18),
+
+            // ── Hero scan card ─────────────────────────────────
+            StaggerIn(index: 3, child: _HeroCard(l: l)),
+            const SizedBox(height: 24),
+
+            // ── Stats ──────────────────────────────────────────
+            if (uid != null) StaggerIn(index: 4, child: _StatsBlock(uid: uid, l: l)),
+            const SizedBox(height: 26),
+
+            // ── Collection header ──────────────────────────────
+            StaggerIn(index: 5, child: Row(children: [
+              Expanded(child: Text(l.home_your_collection, style: theme.textTheme.titleLarge)),
+              TextButton(
+                onPressed: () => ref.read(selectedTabProvider.notifier).state = 1,
+                style: TextButton.styleFrom(
+                  foregroundColor: UrPlantTheme.primaryDark,
+                  textStyle: const TextStyle(fontWeight: FontWeight.w800)),
+                child: Text(l.home_view_all),
+              ),
+            ])),
+            const SizedBox(height: 4),
+
+            // ── Collection rail ────────────────────────────────
+            if (uid == null)
+              const SizedBox(height: 90)
+            else
+              StaggerIn(index: 6, child: _CollectionRail(uid: uid, l: l)),
+
+            const SizedBox(height: 22),
+            const Center(child: LeafDivider(width: 180)),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person_outline),
-            onPressed: () => ref.read(selectedTabProvider.notifier).state = 3,
+      ),
+    );
+  }
+}
+
+class _HeroCard extends StatelessWidget {
+  final AppLocalizations l;
+  const _HeroCard({required this.l});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
+      decoration: BoxDecoration(
+        gradient: UrPlantTheme.heroGradient,
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: const [
+          BoxShadow(color: Color(0x3D0F3D20), blurRadius: 26, offset: Offset(0, 12)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 56, height: 56,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                ),
+                child: const Icon(Icons.center_focus_strong_rounded, color: Colors.white, size: 27),
+              ),
+              Positioned(
+                top: -12, right: -18,
+                child: Transform.rotate(
+                  angle: 0.5,
+                  child: Icon(Icons.eco_rounded,
+                    color: Colors.white.withValues(alpha: 0.16), size: 78),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 15),
+          Text(l.home_hero_title,
+            style: const TextStyle(
+              color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.4)),
+          const SizedBox(height: 6),
+          Text(l.home_hero_subtitle,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.8),
+              fontSize: 13.5, height: 1.45, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 18),
+          ChunkyButton(
+            color: UrPlantTheme.gold,
+            edge: UrPlantTheme.goldEdge,
+            foreground: const Color(0xFF3A2A05),
+            expanded: false,
+            radius: 18,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            onPressed: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const CameraScreen(), fullscreenDialog: true)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.photo_camera_rounded, size: 20),
+              const SizedBox(width: 9),
+              Text(l.home_hero_cta, style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w900)),
+            ]),
           ),
         ],
       ),
-      body: uid == null
-          ? const Center(child: Text('Please sign in'))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Time-based greeting
-                  Text(
-                    _greeting(),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: UrPlantTheme.textTertiary,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Ready to discover?',
-                    style: theme.textTheme.headlineMedium,
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Hero card — glassmorphic style
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(28),
-                    decoration: BoxDecoration(
-                      gradient: UrPlantTheme.primaryGradient,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: UrPlantTheme.primaryMedium.withValues(alpha: 0.3),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 64,
-                          height: 64,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 32),
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Identify any plant instantly',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Point your camera at a plant and let AI do the magic',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.8),
-                            fontSize: 14,
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton.icon(
-                          onPressed: () => Navigator.push(context,
-                              MaterialPageRoute(builder: (_) => const CameraScreen())),
-                          icon: const Icon(Icons.camera_alt, size: 20),
-                          label: const Text('Scan Plant'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: UrPlantTheme.primaryMedium,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-
-                  // Quick Stats — modern pills
-                  StreamBuilder<DocumentSnapshot>(
-                    stream: FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) return _statsSkeleton();
-                      final data = snapshot.data!.data() as Map<String, dynamic>? ?? {};
-                      return Row(
-                        children: [
-                          _modernStatPill('Scans', '${data['total_scans'] ?? 0}', Icons.photo_camera_outlined),
-                          const SizedBox(width: 10),
-                          _modernStatPill('Collection', '${data['plants_unlocked'] ?? 0}', Icons.eco_outlined),
-                          const SizedBox(width: 10),
-                          _modernStatPill('Rare', '${data['rare_count'] ?? 0}', Icons.diamond_outlined),
-                          const SizedBox(width: 10),
-                          _modernStatPill('Earned', '${data['achievements_earned'] ?? 0}', Icons.emoji_events_outlined),
-                        ],
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 28),
-
-                  // Section header
-                  Row(
-                    children: [
-                      Text('Your Collection',
-                          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
-                      const Spacer(),
-                      TextButton(
-                        onPressed: () => ref.read(selectedTabProvider.notifier).state = 1,
-                        child: const Text('View All'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Collection cards
-                  StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('user_plants')
-                        .where('user_id', isEqualTo: uid)
-                        .orderBy('unlocked_at', descending: true)
-                        .limit(10)
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) return _collectionSkeleton();
-                      final docs = snapshot.data!.docs;
-                      if (docs.isEmpty) {
-                        return Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 40),
-                          decoration: BoxDecoration(
-                            color: UrPlantTheme.surfaceCard,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: UrPlantTheme.divider.withValues(alpha: 0.5)),
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(Icons.eco, size: 48, color: UrPlantTheme.primaryAccent.withValues(alpha: 0.4)),
-                              const SizedBox(height: 12),
-                              Text('No plants yet',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: UrPlantTheme.textSecondary)),
-                              const SizedBox(height: 4),
-                              Text('Take your first photo to start your collection',
-                                  style: TextStyle(fontSize: 13, color: UrPlantTheme.textTertiary)),
-                            ],
-                          ),
-                        );
-                      }
-                      return SizedBox(
-                        height: 172,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: docs.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 14),
-                          itemBuilder: (context, i) {
-                            final up = UserPlant.fromMap(docs[i].data() as Map<String, dynamic>);
-                            return _CollectionCard(userPlant: up);
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 40),
-                ],
-              ),
-            ),
     );
   }
+}
 
-  Widget _modernStatPill(String label, String value, IconData icon) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-        decoration: BoxDecoration(
-          color: UrPlantTheme.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: UrPlantTheme.divider.withValues(alpha: 0.6)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, size: 20, color: UrPlantTheme.primaryLight),
-            const SizedBox(height: 6),
-            Text(value,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: UrPlantTheme.textPrimary)),
-            const SizedBox(height: 2),
-            Text(label,
-                style: const TextStyle(fontSize: 10, color: UrPlantTheme.textTertiary, fontWeight: FontWeight.w500)),
-          ],
-        ),
-      ),
-    );
-  }
+class _StatsBlock extends StatelessWidget {
+  final String uid;
+  final AppLocalizations l;
+  const _StatsBlock({required this.uid, required this.l});
 
-  Widget _statsSkeleton() {
-    return Row(
-      children: List.generate(4, (i) {
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(right: i < 3 ? 10 : 0),
-            child: Shimmer.fromColors(
-              baseColor: Colors.grey.shade200,
-              highlightColor: Colors.grey.shade100,
-              child: Container(
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-            ),
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return _skeleton();
+        final d = (snapshot.data!.data() as Map<String, dynamic>?) ?? {};
+        final xp = (d['total_xp'] ?? 0) as int;
+        final level = (d['level'] ?? 1) as int;
+        final tiles = <(String, String, IconData, Color, Color)>[
+          (l.profile_stat_scans, '${d['total_scans'] ?? 0}', Icons.photo_camera_rounded, UrPlantTheme.primary, UrPlantTheme.primarySoft),
+          (l.profile_stat_unlocked, '${d['plants_unlocked'] ?? 0}', Icons.eco_rounded, UrPlantTheme.info, const Color(0xFFDDEBFD)),
+          (l.profile_stat_rare, '${((d['rare_count'] ?? 0) as int) + ((d['special_rare_count'] ?? 0) as int)}', Icons.auto_awesome_rounded, UrPlantTheme.specialPurple, const Color(0xFFEAE2FE)),
+          ('XP', '$xp', Icons.bolt_rounded, UrPlantTheme.goldEdge, const Color(0xFFFBEEDA)),
+        ];
+        final base = (level - 1) * (level - 1) * 100;
+        final next = level * level * 100;
+        final p = ((xp - base) / (next - base)).clamp(0.0, 1.0).toDouble();
+
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: UrPlantTheme.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: UrPlantTheme.line, width: 1.5),
           ),
+          child: Column(children: [
+            Row(children: tiles.map((t) => Expanded(child: _statTile(t))).toList()),
+            if (xp > 0) ...[
+              const SizedBox(height: 12),
+              Row(children: [
+                Text(l.profile_level(level),
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: UrPlantTheme.primaryDark)),
+                const Spacer(),
+                Text('$xp/$next',
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: UrPlantTheme.inkFaint)),
+              ]),
+              const SizedBox(height: 5),
+              LayoutBuilder(builder: (context, box) {
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: SizedBox(
+                    height: 9,
+                    child: Stack(children: [
+                      Container(height: 9, color: UrPlantTheme.primarySoft),
+                      TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0, end: p),
+                        duration: const Duration(milliseconds: 700),
+                        curve: Curves.easeOutCubic,
+                        builder: (_, v, __) => Container(
+                          height: 9,
+                          width: box.maxWidth * v,
+                          decoration: const BoxDecoration(
+                            gradient: UrPlantTheme.leafGradient,
+                            borderRadius: BorderRadius.all(Radius.circular(6)),
+                          ),
+                        ),
+                      ),
+                    ]),
+                  ),
+                );
+              }),
+            ],
+          ]),
         );
-      }),
+      },
     );
   }
 
-  Widget _collectionSkeleton() {
+  Widget _statTile((String, String, IconData, Color, Color) t) {
+    final (label, value, icon, fg, bg) = t;
+    return Column(children: [
+      Container(
+        width: 38, height: 38,
+        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+        child: Icon(icon, size: 19, color: fg),
+      ),
+      const SizedBox(height: 6),
+      Text(value, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: UrPlantTheme.ink, height: 1.1)),
+      Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: UrPlantTheme.inkFaint)),
+    ]);
+  }
+
+  Widget _skeleton() {
+    return Shimmer.fromColors(
+      baseColor: const Color(0xFFE6EFE7), highlightColor: Colors.white,
+      child: Container(height: 96,
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20))),
+    );
+  }
+}
+
+class _CollectionRail extends StatelessWidget {
+  final String uid;
+  final AppLocalizations l;
+  const _CollectionRail({required this.uid, required this.l});
+
+  @override
+  Widget build(BuildContext context) {
     return SizedBox(
-      height: 172,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: 4,
-        separatorBuilder: (_, __) => const SizedBox(width: 14),
-        itemBuilder: (context, i) {
-          return Shimmer.fromColors(
-            baseColor: Colors.grey.shade200,
-            highlightColor: Colors.grey.shade100,
-            child: Container(
-              width: 130,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
+      height: 190,
+      child: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('user_plants')
+            .where('user_id', isEqualTo: uid)
+            .orderBy('unlocked_at', descending: true)
+            .limit(10)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) return _skeleton();
+          final docs = snapshot.data!.docs;
+          if (docs.isEmpty) return _empty();
+          return ListView.separated(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            itemCount: docs.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (context, i) {
+              final up = UserPlant.fromMap(docs[i].data() as Map<String, dynamic>);
+              return _CollectionCard(userPlant: up);
+            },
           );
         },
       ),
     );
   }
+
+  Widget _empty() => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+    decoration: BoxDecoration(
+      color: UrPlantTheme.surface,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: UrPlantTheme.line, width: 1.5),
+    ),
+    child: Row(children: [
+      Container(
+        width: 50, height: 50,
+        decoration: BoxDecoration(color: UrPlantTheme.primarySoft, borderRadius: BorderRadius.circular(15)),
+        child: const Icon(Icons.eco_rounded, color: UrPlantTheme.primaryDark, size: 25),
+      ),
+      const SizedBox(width: 13),
+      Expanded(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(l.encyclopedia_empty_title,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: UrPlantTheme.ink)),
+          const SizedBox(height: 3),
+          Text(l.encyclopedia_empty_body,
+            style: const TextStyle(fontSize: 12.5, color: UrPlantTheme.inkSoft, height: 1.35)),
+        ]),
+      ),
+    ]),
+  );
+
+  Widget _skeleton() => Shimmer.fromColors(
+    baseColor: const Color(0xFFE6EFE7), highlightColor: Colors.white,
+    child: Row(children: List.generate(3, (_) => Expanded(
+      child: Container(height: 190, margin: const EdgeInsets.symmetric(horizontal: 6),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)))))),
+  );
 }
 
 class _CollectionCard extends StatelessWidget {
   final UserPlant userPlant;
   const _CollectionCard({required this.userPlant});
 
-  Color _rarityColor(String? r) {
-    switch (r) {
+  (Color, Color, String) _rarity() {
+    switch (userPlant.rarity) {
       case 'rare':
-        return UrPlantTheme.rarityRare;
+        return (UrPlantTheme.rarityRare, const Color(0xFFDDEBFD), '✦');
       case 'special_rare':
-        return UrPlantTheme.raritySpecial;
+        return (UrPlantTheme.specialPurple, const Color(0xFFEAE2FE), '✦✦');
       default:
-        return UrPlantTheme.rarityNormal;
-    }
-  }
-
-  Color _rarityBg(String? r) {
-    switch (r) {
-      case 'rare':
-        return const Color(0xFFEFF6FF);
-      case 'special_rare':
-        return const Color(0xFFFFFBF0);
-      default:
-        return UrPlantTheme.surfaceCard;
+        return (UrPlantTheme.rarityNormal, UrPlantTheme.primarySoft, '★');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final (c, bg, star) = _rarity();
     return GestureDetector(
       onTap: () => Navigator.push(context,
           MaterialPageRoute(builder: (_) => PlantDetailScreen(plantId: userPlant.plantId))),
-      child: Container(
-        width: 130,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        width: 122,
         decoration: BoxDecoration(
-          color: _rarityBg(userPlant.rarity),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: UrPlantTheme.divider.withValues(alpha: 0.4)),
+          color: UrPlantTheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: c.withValues(alpha: 0.4), width: 1.5),
+          boxShadow: const [BoxShadow(color: Color(0x1414281B), blurRadius: 12, offset: Offset(0, 5))],
         ),
+        clipBehavior: Clip.antiAlias,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (userPlant.thumbnailUrl.isNotEmpty)
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: Image.network(userPlant.thumbnailUrl, width: 130, height: 110, fit: BoxFit.cover),
-              )
-            else
-              Padding(
-                padding: const EdgeInsets.only(top: 24),
-                child: Icon(Icons.eco, size: 48, color: _rarityColor(userPlant.rarity).withValues(alpha: 0.5)),
+            Expanded(
+              child: userPlant.thumbnailUrl.isNotEmpty
+                  ? Image.network(userPlant.thumbnailUrl, fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _placeholder(c))
+                  : _placeholder(c),
+            ),
+            Container(
+              padding: const EdgeInsets.fromLTRB(9, 6, 7, 7),
+              decoration: BoxDecoration(
+                color: bg,
+                border: Border(top: BorderSide(color: c.withValues(alpha: 0.3))),
               ),
-            const SizedBox(height: 6),
-            _rarityBadge(userPlant.rarity),
-            const SizedBox(height: 4),
+              child: Row(children: [
+                Expanded(child: Text(
+                  userPlant.displayName,
+                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: c))),
+                Text(star, style: TextStyle(fontSize: 12, color: c, fontWeight: FontWeight.w900)),
+              ]),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _rarityBadge(String? r) {
-    String icon = '★';
-    Color color = UrPlantTheme.rarityNormal;
-    if (r == 'rare') {
-      icon = '✦';
-      color = UrPlantTheme.rarityRare;
-    }
-    if (r == 'special_rare') {
-      icon = '✦✦';
-      color = UrPlantTheme.raritySpecial;
-    }
-    return Text(icon, style: TextStyle(fontSize: 13, color: color, fontWeight: FontWeight.w700));
-  }
+  Widget _placeholder(Color c) => Container(
+    color: c.withValues(alpha: 0.08),
+    alignment: Alignment.center,
+    child: Icon(Icons.eco_rounded, color: c.withValues(alpha: 0.45), size: 32),
+  );
 }

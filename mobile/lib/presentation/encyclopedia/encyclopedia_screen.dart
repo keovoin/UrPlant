@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../config/theme.dart';
 import '../../data/models/plant.dart';
+import '../../l10n/app_localizations.dart';
 import '../plant_detail/plant_detail_screen.dart';
 
 class EncyclopediaScreen extends StatefulWidget {
@@ -14,10 +15,12 @@ class EncyclopediaScreen extends StatefulWidget {
 }
 
 class _EncyclopediaScreenState extends State<EncyclopediaScreen> {
+  final _searchCtrl = TextEditingController();
   String _search = '';
   String _rarityFilter = 'all';
-  final _searchCtrl = TextEditingController();
   Set<String> _unlockedPlantIds = {};
+  // "All" here means every species that exists (verified or AI-logged), not
+  // just admin-verified — otherwise the guide looked empty next to your journal.
 
   @override
   void initState() {
@@ -38,33 +41,42 @@ class _EncyclopediaScreenState extends State<EncyclopediaScreen> {
         .collection('user_plants')
         .where('user_id', isEqualTo: uid)
         .get();
+    if (!mounted) return;
     setState(() {
-      _unlockedPlantIds = snapshot.docs.map((d) => d.data()['plant_id'] as String).toSet();
+      _unlockedPlantIds = snapshot.docs.map((d) {
+        final pid = (d.data()['plant_id'] ?? '').toString();
+        // legacy documents stored the raw scientific name — normalize
+        return pid.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_');
+      }).toSet();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final l = AppLocalizations.of(context);
 
     return Scaffold(
+      backgroundColor: UrPlantTheme.canvas,
       appBar: AppBar(
-        title: const Text('Encyclopedia'),
+        backgroundColor: UrPlantTheme.canvas,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        title: Text(l.encyclopedia_title),
       ),
       body: Column(
         children: [
-          // Search bar
+          // ── Search pill ────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
             child: TextField(
               controller: _searchCtrl,
               onChanged: (v) => setState(() => _search = v.toLowerCase()),
               decoration: InputDecoration(
-                hintText: 'Search plants...',
-                prefixIcon: const Icon(Icons.search, size: 20),
+                hintText: l.encyclopedia_search,
+                prefixIcon: const Icon(Icons.search_rounded, size: 21, color: UrPlantTheme.inkFaint),
                 suffixIcon: _search.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear, size: 20),
+                        icon: const Icon(Icons.close_rounded, size: 19),
                         onPressed: () {
                           _searchCtrl.clear();
                           setState(() => _search = '');
@@ -75,186 +87,145 @@ class _EncyclopediaScreenState extends State<EncyclopediaScreen> {
             ),
           ),
 
-          // Rarity filter chips
+          // ── Rarity bubbles ─────────────────────────────────
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Row(
-              children: [
-                _modernFilterChip('All', 'all'),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              child: Row(children: [
+                _bubble(l.encyclopedia_filter_all, 'all', UrPlantTheme.ink, const Color(0xFFE8E8EC)),
                 const SizedBox(width: 8),
-                _modernFilterChip('★ Normal', 'normal'),
+                _bubble('★ ${l.encyclopedia_filter_normal}', 'normal',
+                    UrPlantTheme.rarityNormal, UrPlantTheme.primarySoft),
                 const SizedBox(width: 8),
-                _modernFilterChip('✦ Rare', 'rare'),
+                _bubble('✦ ${l.encyclopedia_filter_rare}', 'rare',
+                    UrPlantTheme.rarityRare, const Color(0xFFDDEBFD)),
                 const SizedBox(width: 8),
-                _modernFilterChip('✦✦ Special', 'special_rare'),
-              ],
+                _bubble('✦✦ ${l.encyclopedia_filter_special}', 'special_rare',
+                    UrPlantTheme.specialPurple, const Color(0xFFEAE2FE)),
+                const SizedBox(width: 8),
+                _bubble(l.history_status_matched, 'unlocked',
+                    UrPlantTheme.goldEdge, const Color(0xFFFBEEDA)),
+              ]),
             ),
           ),
 
-          // Collection progress
+          // ── Collection progress ────────────────────────────
           StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('plants')
-                .where('verified', isEqualTo: true)
-                .snapshots(),
+            stream: FirebaseFirestore.instance.collection('plants').snapshots(),
             builder: (context, snapshot) {
               final total = snapshot.data?.docs.length ?? 0;
               final unlocked = _unlockedPlantIds.length;
-              final percent = total > 0 ? (unlocked / total) : 0.0;
-
+              final percent = total > 0 ? (unlocked / total).clamp(0.0, 1.0) : 0.0;
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: UrPlantTheme.surfaceCard,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: UrPlantTheme.divider.withValues(alpha: 0.5)),
+                    color: UrPlantTheme.surface,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: UrPlantTheme.line, width: 1.5),
                   ),
-                  child: Row(
-                    children: [
-                      // Progress ring
-                      SizedBox(
-                        width: 44,
-                        height: 44,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            SizedBox(
-                              width: 44,
-                              height: 44,
-                              child: CircularProgressIndicator(
-                                value: percent,
-                                strokeWidth: 4,
-                                backgroundColor: UrPlantTheme.divider,
-                                color: UrPlantTheme.primaryLight,
+                  child: Column(children: [
+                    Row(children: [
+                      Text('🌿', style: const TextStyle(fontSize: 15)),
+                      const SizedBox(width: 6),
+                      Flexible(child: Text(l.collection_progress_label,
+                          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800,
+                              color: UrPlantTheme.inkSoft))),
+                      const Spacer(),
+                      Text('$unlocked / $total',
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900,
+                              color: UrPlantTheme.primaryDark)),
+                    ]),
+                    const SizedBox(height: 8),
+                    LayoutBuilder(builder: (context, box) {
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: SizedBox(
+                          height: 10,
+                          child: Stack(children: [
+                            Container(height: 10, color: UrPlantTheme.primarySoft),
+                            TweenAnimationBuilder<double>(
+                              tween: Tween(begin: 0, end: percent),
+                              duration: const Duration(milliseconds: 800),
+                              curve: Curves.easeOutCubic,
+                              builder: (_, v, __) => Container(
+                                height: 10,
+                                width: box.maxWidth * v,
+                                decoration: const BoxDecoration(
+                                  gradient: UrPlantTheme.leafGradient,
+                                  borderRadius: BorderRadius.all(Radius.circular(6)),
+                                ),
                               ),
                             ),
-                            Text(
-                              '${(percent * 100).round()}%',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: UrPlantTheme.textPrimary,
-                              ),
-                            ),
-                          ],
+                          ]),
                         ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Collection Progress',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: UrPlantTheme.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '$unlocked of $total plants unlocked',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: UrPlantTheme.textTertiary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                      );
+                    }),
+                  ]),
                 ),
               );
             },
           ),
 
-          // Plant grid
+          // ── Plant grid ─────────────────────────────────────
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('plants')
-                  .where('verified', isEqualTo: true)
-                  .orderBy('name_en')
+                  .orderBy('updated_at', descending: true)
+                  .limit(300)
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.error_outline, size: 48,
-                            color: UrPlantTheme.textTertiary.withValues(alpha: 0.5)),
-                        const SizedBox(height: 8),
-                        const Text('Could not load plants',
-                            style: TextStyle(color: UrPlantTheme.textSecondary)),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: () => setState(() {}),
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  );
+                  return _errorState();
                 }
                 if (!snapshot.hasData) return _gridSkeleton();
 
-                var plants = snapshot.data!.docs.where((doc) {
+                final plants = (snapshot.data!.docs).where((doc) {
                   final data = doc.data() as Map<String, dynamic>;
+                  final id = doc.id.toLowerCase();
                   final nameEn = (data['name_en'] ?? '').toString().toLowerCase();
                   final nameKh = (data['name_kh'] ?? '').toString().toLowerCase();
                   final sci = (data['scientific_name'] ?? '').toString().toLowerCase();
-                  final rarity = data['rarity'] ?? 'normal';
 
-                  if (_search.isNotEmpty) {
-                    if (!nameEn.contains(_search) &&
-                        !nameKh.contains(_search) &&
-                        !sci.contains(_search)) {
-                      return false;
-                    }
+                  if (_search.isNotEmpty &&
+                      !nameEn.contains(_search) &&
+                      !nameKh.contains(_search) &&
+                      !sci.contains(_search) &&
+                      !id.contains(_search.replaceAll(' ', '_'))) {
+                    return false;
                   }
-
-                  if (_rarityFilter != 'all' && rarity != _rarityFilter) return false;
-
+                  if (_rarityFilter == 'unlocked' && !_unlockedPlantIds.contains(id)) return false;
+                  if (_rarityFilter != 'all' && _rarityFilter != 'unlocked' &&
+                      (data['rarity'] ?? 'normal') != _rarityFilter) {
+                    return false;
+                  }
                   return true;
                 }).toList();
 
-                if (plants.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.eco, size: 64,
-                            color: UrPlantTheme.primaryAccent.withValues(alpha: 0.3)),
-                        const SizedBox(height: 12),
-                        const Text('No plants found',
-                            style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: UrPlantTheme.textSecondary)),
-                      ],
-                    ),
-                  );
-                }
+                if (plants.isEmpty) return _emptyState(l);
 
                 return GridView.builder(
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.fromLTRB(14, 6, 14, 130),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.72,
+                    childAspectRatio: 0.70,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                   ),
                   itemCount: plants.length,
                   itemBuilder: (context, index) {
                     final doc = plants[index];
-                    final plant =
-                        Plant.fromMap(doc.id, doc.data() as Map<String, dynamic>);
-                    final isUnlocked = _unlockedPlantIds.contains(doc.id);
-                    return _plantCard(plant, isUnlocked);
+                    final plant = Plant.fromMap(doc.id, doc.data() as Map<String, dynamic>);
+                    final isUnlocked = _unlockedPlantIds.contains(doc.id.toLowerCase());
+                    return StaggerIn(
+                      key: ValueKey(doc.id),
+                      index: index % 8,
+                      child: _plantCard(plant, isUnlocked, l),
+                    );
                   },
                 );
               },
@@ -265,44 +236,33 @@ class _EncyclopediaScreenState extends State<EncyclopediaScreen> {
     );
   }
 
-  Widget _modernFilterChip(String label, String value) {
+  Widget _bubble(String label, String value, Color color, Color softBg) {
     final selected = _rarityFilter == value;
-    Color color;
-    switch (value) {
-      case 'rare':
-        color = UrPlantTheme.rarityRare;
-        break;
-      case 'special_rare':
-        color = UrPlantTheme.raritySpecial;
-        break;
-      default:
-        color = UrPlantTheme.primaryMedium;
-    }
-
     return GestureDetector(
       onTap: () => setState(() => _rarityFilter = value),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? color.withValues(alpha: 0.12) : UrPlantTheme.surfaceCard,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? color.withValues(alpha: 0.4) : UrPlantTheme.divider.withValues(alpha: 0.4),
-          ),
+          color: selected ? color : UrPlantTheme.surface,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: selected ? color : UrPlantTheme.line, width: 1.5),
+          boxShadow: selected
+              ? [BoxShadow(color: color.withValues(alpha: 0.35), offset: const Offset(0, 3))]
+              : null,
         ),
-        child: Text(
-          label,
+        child: Text(label,
           style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: selected ? color : UrPlantTheme.textTertiary,
-          ),
-        ),
+            fontSize: 12.5,
+            fontWeight: FontWeight.w800,
+            color: selected ? Colors.white : UrPlantTheme.inkSoft,
+          )),
       ),
     );
   }
 
-  Widget _plantCard(Plant plant, bool isUnlocked) {
+  Widget _plantCard(Plant plant, bool isUnlocked, AppLocalizations l) {
+    final (c, star) = _rarity(plant.rarity);
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
@@ -311,72 +271,73 @@ class _EncyclopediaScreenState extends State<EncyclopediaScreen> {
       child: Container(
         decoration: BoxDecoration(
           color: UrPlantTheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: UrPlantTheme.divider.withValues(alpha: 0.4)),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: c.withValues(alpha: isUnlocked ? 0.4 : 0.18), width: 1.5),
+          boxShadow: const [BoxShadow(color: Color(0x1214281B), blurRadius: 10, offset: Offset(0, 4))],
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Image area
             Expanded(
               flex: 3,
-              child: isUnlocked
-                  ? (plant.thumbnailUrl.isNotEmpty
-                      ? Image.network(plant.thumbnailUrl,
-                          width: double.infinity, fit: BoxFit.cover)
-                      : Container(
-                          color: UrPlantTheme.primaryAccent.withValues(alpha: 0.08),
-                          child: Center(
-                            child: Icon(Icons.eco, size: 40,
-                                color: UrPlantTheme.primaryAccent.withValues(alpha: 0.4)),
-                          ),
-                        ))
-                  : Container(
-                      color: UrPlantTheme.surfaceCard,
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.lock_outline, size: 32,
-                                color: UrPlantTheme.textTertiary.withValues(alpha: 0.5)),
-                            const SizedBox(height: 6),
-                            Text('Find to unlock',
-                                style: TextStyle(
-                                    fontSize: 10, color: UrPlantTheme.textTertiary)),
-                          ],
-                        ),
-                      ),
+              child: Stack(children: [
+                if (isUnlocked && plant.thumbnailUrl.isNotEmpty)
+                  Image.network(plant.thumbnailUrl, width: double.infinity, fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _ph(c))
+                else if (isUnlocked)
+                  _ph(c)
+                else
+                  Container(
+                    color: UrPlantTheme.surfaceCard,
+                    child: Center(
+                      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        Icon(Icons.lock_outline_rounded, size: 28,
+                            color: UrPlantTheme.inkFaint.withValues(alpha: 0.55)),
+                        const SizedBox(height: 5),
+                        Text(l.encyclopedia_locked_hint,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                                fontSize: 10, color: UrPlantTheme.inkFaint,
+                                fontWeight: FontWeight.w700)),
+                      ]),
                     ),
+                  ),
+                Positioned(
+                  top: 8, left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: isUnlocked ? c : UrPlantTheme.inkFaint,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(star,
+                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900)),
+                  ),
+                ),
+              ]),
             ),
-            // Info
             Expanded(
               flex: 2,
               child: Padding(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      plant.nameEn,
+                    Text(plant.localizedName(false),
                       style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w600,
-                          color: UrPlantTheme.textPrimary),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      plant.scientificName,
+                          fontSize: 13.5, fontWeight: FontWeight.w800, color: UrPlantTheme.ink),
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 1),
+                    Text(plant.scientificName,
                       style: const TextStyle(
-                          fontSize: 11,
-                          fontStyle: FontStyle.italic,
-                          color: UrPlantTheme.textTertiary),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                          fontSize: 10.5, fontStyle: FontStyle.italic, color: UrPlantTheme.inkFaint),
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
                     const Spacer(),
-                    _rarityBadge(plant.rarity),
+                    if (!isUnlocked && plant.totalUnlocks > 0)
+                      Text('${plant.totalUnlocks} found',
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
+                              color: UrPlantTheme.inkFaint)),
                   ],
                 ),
               ),
@@ -387,49 +348,66 @@ class _EncyclopediaScreenState extends State<EncyclopediaScreen> {
     );
   }
 
-  Widget _rarityBadge(String rarity) {
-    Color c;
-    String t;
-    switch (rarity) {
-      case 'rare':
-        c = UrPlantTheme.rarityRare;
-        t = '✦ Rare';
-        break;
-      case 'special_rare':
-        c = UrPlantTheme.raritySpecial;
-        t = '✦✦ Special';
-        break;
-      default:
-        c = UrPlantTheme.rarityNormal;
-        t = '★ Normal';
+  (Color, String) _rarity(String r) {
+    switch (r) {
+      case 'rare': return (UrPlantTheme.rarityRare, '✦');
+      case 'special_rare': return (UrPlantTheme.specialPurple, '✦✦');
+      default: return (UrPlantTheme.rarityNormal, '★');
     }
-    return Text(t,
-        style: TextStyle(
-            fontSize: 10, color: c, fontWeight: FontWeight.w700));
   }
+
+  Widget _ph(Color c) => Container(
+    color: c.withValues(alpha: 0.08),
+    alignment: Alignment.center,
+    child: Icon(Icons.eco_rounded, color: c.withValues(alpha: 0.5), size: 34),
+  );
+
+  Widget _errorState() => Center(
+    child: Column(children: [
+      const SizedBox(height: 90),
+      Icon(Icons.cloud_off_rounded, size: 44, color: UrPlantTheme.inkFaint.withValues(alpha: 0.5)),
+      const SizedBox(height: 10),
+      Text(AppLocalizations.of(context).common_error,
+          style: const TextStyle(color: UrPlantTheme.inkSoft, fontWeight: FontWeight.w700)),
+      const SizedBox(height: 8),
+      TextButton(onPressed: () => setState(() {}),
+        child: Text(AppLocalizations.of(context).common_retry)),
+    ]),
+  );
+
+  Widget _emptyState(AppLocalizations l) => Center(
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 30),
+      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Container(
+          width: 68, height: 68,
+          decoration: const BoxDecoration(color: UrPlantTheme.primarySoft, shape: BoxShape.circle),
+          child: const Icon(Icons.eco_rounded, size: 30, color: UrPlantTheme.primaryDark),
+        ),
+        const SizedBox(height: 13),
+        Text(l.encyclopedia_empty_title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: UrPlantTheme.ink)),
+        const SizedBox(height: 5),
+        Text(l.encyclopedia_empty_body,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 12.5, color: UrPlantTheme.inkFaint, height: 1.4)),
+      ]),
+    ),
+  );
 
   Widget _gridSkeleton() {
     return GridView.builder(
       padding: const EdgeInsets.all(14),
+      physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.72,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
+        crossAxisCount: 2, childAspectRatio: 0.70, crossAxisSpacing: 12, mainAxisSpacing: 12,
       ),
       itemCount: 6,
-      itemBuilder: (context, index) {
-        return Shimmer.fromColors(
-          baseColor: Colors.grey.shade200,
-          highlightColor: Colors.grey.shade100,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-        );
-      },
+      itemBuilder: (context, index) => Shimmer.fromColors(
+        baseColor: const Color(0xFFE6EFE7), highlightColor: Colors.white,
+        child: Container(decoration: BoxDecoration(
+          color: Colors.white, borderRadius: BorderRadius.circular(18))),
+      ),
     );
   }
 }

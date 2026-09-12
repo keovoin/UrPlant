@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/theme.dart';
-import '../shell/app_shell.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -47,18 +46,50 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${e.code}: ${e.message ?? 'Error'}'),
+          SnackBar(content: Text(_friendlyError(e)),
+              backgroundColor: UrPlantTheme.error,
               duration: const Duration(seconds: 5)),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$e'), duration: const Duration(seconds: 5)),
+          SnackBar(content: Text(_t('Something went wrong. Please try again.',
+              'មានបញ្ហាកើតឡើង។ សូមព្យាយាមម្តងទៀត។')),
+              backgroundColor: UrPlantTheme.error,
+              duration: const Duration(seconds: 5)),
         );
       }
     }
     if (mounted) setState(() => _loading = false);
+  }
+
+  String _friendlyError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-email':
+        return _t('That email address looks invalid.', 'អ៊ីមែលនេះមិនត្រឹមត្រូវទេ។');
+      case 'user-disabled':
+        return _t('This account has been disabled.', 'គណនីនេះត្រូវបានបិទ។');
+      case 'user-not-found':
+      case 'wrong-password':
+      case 'invalid-credential':
+        return _t('Wrong email or password.', 'អ៊ីមែល ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវ។');
+      case 'email-already-in-use':
+        return _t('An account already exists with this email.', 'គណនីសម្រាប់អ៊ីមែលនេះមានរួចហើយ។');
+      case 'weak-password':
+        return _t('Please choose a stronger password (at least 8 characters).',
+            'សូមជ្រើសរើសពាក្យសម្ងាត់ខ្លាំងជាងមុន (តិចតួច ៨ អក្សរ)។');
+      case 'too-many-requests':
+        return _t('Too many attempts — please wait a moment and try again.',
+            'ការព្យាយាមច្រើនពេក — សូមរង់ចាំបន្តិចហើយព្យាយាមម្តងទៀត។');
+      case 'network-request-failed':
+        return _t('Network error — check your connection and try again.',
+            'បញ្ហាបណ្តាញ - សូមពិនិត្យការតភ្ជាប់របស់អ្នក។');
+      case 'requires-recent-login':
+        return _t('Please sign in again before retrying.', 'សូមចូលគណនីម្តងទៀតមុនព្យាយាម។');
+      default:
+        return _t('Sign-in failed. Please try again.', 'ការចូលបរាជ័យ។ សូមព្យាយាមម្តងទៀត។');
+    }
   }
 
   String _t(String en, String km) {
@@ -68,7 +99,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isKhmer = Localizations.localeOf(context).languageCode == 'km';
 
     return Scaffold(
       body: SafeArea(

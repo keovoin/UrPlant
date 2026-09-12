@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../main.dart';
 import '../achievements/achievements_screen.dart';
 
@@ -17,7 +18,7 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: Text(AppLocalizations.of(context).profile_title),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -147,20 +148,20 @@ class ProfileScreen extends ConsumerWidget {
                       // Stats grid
                       Row(
                         children: [
-                          _modernStatCard('Total Scans', '${data['total_scans'] ?? 0}',
+                          _modernStatCard(AppLocalizations.of(context).profile_stat_scans, '${data['total_scans'] ?? 0}',
                               Icons.photo_camera, UrPlantTheme.primaryLight),
                           const SizedBox(width: 12),
-                          _modernStatCard('Plants', '${data['plants_unlocked'] ?? 0}',
+                          _modernStatCard(AppLocalizations.of(context).profile_stat_unlocked, '${data['plants_unlocked'] ?? 0}',
                               Icons.eco, UrPlantTheme.success),
                         ],
                       ),
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          _modernStatCard('Rare', '${data['rare_count'] ?? 0}',
+                          _modernStatCard(AppLocalizations.of(context).profile_stat_rare, '${data['rare_count'] ?? 0}',
                               Icons.diamond, UrPlantTheme.rarityRare),
                           const SizedBox(width: 12),
-                          _modernStatCard('Earned', '${data['achievements_earned'] ?? 0}',
+                          _modernStatCard(AppLocalizations.of(context).profile_stat_achievements, '${data['achievements_earned'] ?? 0}',
                               Icons.emoji_events, UrPlantTheme.raritySpecial),
                         ],
                       ),
@@ -171,7 +172,7 @@ class ProfileScreen extends ConsumerWidget {
                         icon: Icons.emoji_events,
                         iconColor: UrPlantTheme.warning,
                         iconBg: UrPlantTheme.warning.withValues(alpha: 0.1),
-                        title: 'Achievements',
+                        title: AppLocalizations.of(context).achievements_title,
                         onTap: () => Navigator.push(context,
                             MaterialPageRoute(builder: (_) => const AchievementsScreen())),
                       ),
@@ -218,29 +219,30 @@ class ProfileScreen extends ConsumerWidget {
                           ),
                           child: const Icon(Icons.delete_outline, color: UrPlantTheme.error, size: 22),
                         ),
-                        title: const Text('Delete Account',
+                        title: Text(AppLocalizations.of(context).profile_delete_account,
                             style: TextStyle(color: UrPlantTheme.error, fontWeight: FontWeight.w500)),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         onTap: () async {
                           final confirm = await showDialog<bool>(
                             context: context,
                             builder: (ctx) => AlertDialog(
-                              title: const Text('Delete Account?'),
-                              content: const Text('This cannot be undone.'),
+                              title: Text('${AppLocalizations.of(context).profile_delete_account}?'),
+                              content: Text(AppLocalizations.of(context).delete_account_warning),
                               actions: [
                                 TextButton(
                                     onPressed: () => Navigator.pop(ctx, false),
-                                    child: const Text('Cancel')),
+                                    child: Text(AppLocalizations.of(context).common_cancel)),
                                 TextButton(
                                     onPressed: () => Navigator.pop(ctx, true),
-                                    child: const Text('Delete',
+                                    child: Text(AppLocalizations.of(context).common_confirm,
                                         style: TextStyle(color: UrPlantTheme.error))),
                               ],
                             ),
                           );
-                          if (confirm == true && user != null) {
+                          if (confirm == true) {
                             await user.delete();
-                            if (Navigator.canPop(context)) Navigator.pop(context);
+                            if (!context.mounted) return;
+                            Navigator.of(context).pop();
                           }
                         },
                       ),
@@ -358,5 +360,13 @@ class ProfileScreen extends ConsumerWidget {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('language', code);
     ref.read(localeProvider.notifier).state = Locale(code == 'kh' ? 'km' : 'en');
+    // Sync to server so AI enrichment/identification responds in the right language
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .update({'language': code == 'kh' ? 'km' : 'en'}).catchError((_) {});
+    }
   }
 }

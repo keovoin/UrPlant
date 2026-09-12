@@ -1,6 +1,7 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../identifying/identifying_screen.dart';
 
 class CameraScreen extends StatefulWidget {
@@ -103,7 +104,7 @@ class _CameraScreenState extends State<CameraScreen>
       debugPrint('Take picture error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to take picture')),
+          SnackBar(content: Text(AppLocalizations.of(context).camera_failed), backgroundColor: UrPlantTheme.error),
         );
       }
     }
@@ -131,13 +132,14 @@ class _CameraScreenState extends State<CameraScreen>
   }
 
   String get _flashLabel {
+    // uses context — called from build only
     switch (_flashMode) {
       case FlashMode.always:
-        return 'On';
+        return AppLocalizations.of(context).camera_flash_on;
       case FlashMode.off:
-        return 'Off';
+        return AppLocalizations.of(context).camera_flash_off;
       default:
-        return 'Auto';
+        return AppLocalizations.of(context).camera_flash_auto;
     }
   }
 
@@ -171,7 +173,7 @@ class _CameraScreenState extends State<CameraScreen>
                 child: const Icon(Icons.camera_alt, color: Colors.white, size: 28),
               ),
               const SizedBox(height: 16),
-              const Text('Starting camera...',
+              Text(AppLocalizations.of(context).camera_starting,
                   style: TextStyle(color: Colors.white70, fontSize: 14)),
             ],
           ),
@@ -220,7 +222,7 @@ class _CameraScreenState extends State<CameraScreen>
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          'Frame the plant',
+                          AppLocalizations.of(context).camera_frame_hint,
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.5 * _pulseAnim.value),
                             fontSize: 14,
