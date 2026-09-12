@@ -78,6 +78,15 @@ export async function incrementUserStats(
     data['last_active'] = admin.firestore.FieldValue.serverTimestamp();
 
     transaction.update(ref, data);
+
+    // Recompute level from the new XP: level = floor(sqrt(xp / 100)) + 1
+    // (docs/DATABASE_SCHEMA.md formula). Read back total_xp inside the txn.
+    const after = await transaction.get(ref);
+    const newTotalXp = (after.data()?.['total_xp'] as number) || 0;
+    const newLevel = Math.floor(Math.sqrt(newTotalXp / 100)) + 1;
+    if ((after.data()?.['level'] as number) !== newLevel) {
+      transaction.update(ref, { level: newLevel });
+    }
   });
 }
 

@@ -117,7 +117,7 @@ export const identifyPlant = functions
       // Parse the request
       const parsed = await new Promise<{ fields: Record<string, string>; image: Buffer | null }>(
         (resolve, reject) => {
-          const bb = busboy({ headers: req.headers });
+          const bb = busboy({ headers: req.headers, limits: { fileSize: 8 * 1024 * 1024, files: 1 } });
           const f: Record<string, string> = {};
           let img: Buffer | null = null;
 
@@ -145,11 +145,32 @@ export const identifyPlant = functions
         return;
       }
 
-      // 3. Compress image to WebP
-      const webpBuffer = await sharp(parsed.image)
-        .resize(1024, 1024, { fit: 'inside', withoutEnlargement: true })
-        .webp({ quality: 80 })
-        .toBuffer();
+      // 3. Reject oversized uploads before any processing (DoS guard)
+      const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+      if (parsed.image.length > MAX_UPLOAD_BYTES) {
+        res.status(413).json({
+          success: false,
+          error: 'image_too_large',
+          message_en: 'Photo is too large. Please retake the photo.',
+        });
+        return;
+      }
+
+      // 4. Compress image to WebP (fail-closed: unparseable bytes never reach AI/storage)
+      let webpBuffer: Buffer;
+      try {
+        webpBuffer = await sharp(parsed.image)
+          .resize(1024, 1024, { fit: 'inside', withoutEnlargement: true })
+          .webp({ quality: 80 })
+          .toBuffer();
+      } catch {
+        res.status(400).json({
+          success: false,
+          error: 'invalid_image',
+          message_en: 'That image could not be read. Please take the photo again.',
+        });
+        return;
+      }
 
       imageBuffer = webpBuffer;
 
@@ -263,9 +284,83 @@ export const identifyPlant = functions
         return;
       }
 
-      // 10. Build plant profile directly from AI result (NO database lookup)
+      // 10. Build plant profile directly from AI result
       const rarity = rollRarity();
       const plantData = buildPlantFromAi(aiResult, photoUrl, thumbnailUrl, rarity);
+
+      // 10b. Upsert the species into the shared `plants` catalog so
+      // PlantDetailScreen/Encyclopedia can find it by id. Admin-curated
+      // fields (verified, name_kh, care, etc.) are never overwritten here —
+      // we only fill gaps and count unlocks.
+      const catalogId = (aiResult.species || 'unknown').trim().toLowerCase().replace(/\s+/g, '_');
+      const catalogRef = admin.firestore().collection('plants').doc(catalogId);
+      const catalogSnap = await catalogRef.get();
+      if (!catalogSnap.exists) {
+        await catalogRef.set({
+          name_en: (aiResult.common_names?.[0] || aiResult.species),
+          name_kh: '',
+          scientific_name: aiResult.species,
+          scientific_name_lower: aiResult.species.trim().toLowerCase(),
+          family: aiResult.taxonomy?.family || '',
+          genus: aiResult.taxonomy?.genus || '',
+          species: aiResult.taxonomy?.species || '',
+          rarity,
+          description_en: aiResult.characteristics || '',
+          characteristics_en: aiResult.characteristics || '',
+          habitat_en: aiResult.habitat || '',
+          origin_en: aiResult.habitat || '',
+          uses_en: aiResult.uses || '',
+          description: aiResult.characteristics || '',
+          origin: aiResult.habitat || '',
+          characteristics: aiResult.characteristics || '',
+          habitat: aiResult.habitat || '',
+          uses: aiResult.uses || '',
+          care: {},
+          fun_facts: [],
+          verified: false,
+          ai_generated: true,
+          total_unlocks: 1,
+          search_keywords: [
+            (aiResult.common_names?.[0] || '').toLowerCase(),
+            aiResult.species.toLowerCase(),
+          ].filter(Boolean),
+          image_urls: [thumbnailUrl],
+          thumbnail_url: thumbnailUrl,
+          created_at: admin.firestore.FieldValue.serverTimestamp(),
+          updated_at: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        // Fire-and-forget: enrich EN+KH content via AI gateway (enrichInfo
+        // trigger skips when another copy is already enriching).
+        admin.firestore().collection('enrich_requests').doc(catalogId).set({
+          plant_id: catalogId,
+          plant_name: aiResult.common_names?.[0] || aiResult.species,
+          scientific_name: aiResult.species,
+          taxonomy: aiResult.taxonomy,
+          confidence: aiResult.confidence,
+          status: 'pending',
+          requested_at: admin.firestore.FieldValue.serverTimestamp(),
+        }).catch(() => {});
+      } else {
+        await catalogRef.update({
+          total_unlocks: admin.firestore.FieldValue.increment(1),
+          updated_at: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        // If an earlier AI-generated copy never got its Khmer/enrichment pass,
+        // queue it again (trigger dedupes on status).
+        const cd = catalogSnap.data() || {};
+        if (cd.ai_generated === true && !(cd.description_kh || cd.name_kh)) {
+          admin.firestore().collection('enrich_requests').doc(catalogId).set({
+            plant_id: catalogId,
+            plant_name: cd.name_en || aiResult.species,
+            scientific_name: aiResult.species,
+            taxonomy: aiResult.taxonomy,
+            confidence: aiResult.confidence,
+            status: 'pending',
+            requested_at: admin.firestore.FieldValue.serverTimestamp(),
+          }).catch(() => {});
+        }
+      }
+      plantData.id = catalogId;
 
       // 11. Check if user already unlocked this plant (by species key in user_plants)
       const existingUserPlant = await getUserPlantBySpecies(uid, aiResult.species);
@@ -347,7 +442,7 @@ export const identifyPlant = functions
           .doc(upkKey)
           .set({
             user_id: uid,
-            plant_id: upkKey,
+            plant_id: catalogId, // catalog id so PlantDetail/Encyclopedia can resolve
             unlocked_at: serverTimestamp(),
             rarity,
             photo_url: photoUrl,

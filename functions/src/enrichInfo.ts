@@ -49,6 +49,7 @@ Respond with ONLY valid JSON, no markdown, no explanation:
     "fun_facts": ["...", "...", "..."]
   },
   "kh": {
+    "name": "ភាសាខ្មែរ common name (leave empty string if no standard Khmer name exists)",
     "description": "...",
     "origin": "...",
     "characteristics": "...",
@@ -66,29 +67,35 @@ Respond with ONLY valid JSON, no markdown, no explanation:
 }`;
 
 // ─── Cloud Function ──────────────────────────────────────────────
+// Firestore-triggered: identifyPlant queues a doc in `enrich_requests`;
+// this runs automatically when one appears, fills EN+KH content into the
+// `plants` catalog doc, marks the request done, and removes the queue doc.
+// (Previously an open https endpoint nobody called — the headline Khmer
+// feature silently never ran.)
 export const enrichInfo = functions
   .runWith({
-    timeoutSeconds: 45,
+    timeoutSeconds: 54,
     memory: '256MB',
   })
-  .https.onRequest(async (req, res) => {
-    res.set('Access-Control-Allow-Origin', '*');
+  .firestore.document('enrich_requests/{requestId}')
+  .onWrite(async (change, context) => {
+    const requestId = context.params.requestId;
+    const after = change.after.exists ? change.after.data() : null;
 
-    if (req.method === 'OPTIONS') {
-      res.status(204).send('');
-      return;
-    }
+    // Only process fresh pending requests (creation or re-queue update);
+    // skip our own status writes to avoid loops.
+    if (!after || after.status !== 'pending') return;
+    if (change.before.exists && change.before.data()?.status === 'pending') return;
 
-    if (req.method !== 'POST') {
-      res.status(405).json({ error: 'method_not_allowed' });
-      return;
-    }
+    const snap = change.after.ref;
+    await snap.update({ status: 'enriching' }).catch(() => {});
 
     try {
-      const { plant_id, plant_name, scientific_name, taxonomy, confidence } = req.body;
+      const { plant_id, plant_name, scientific_name, taxonomy, confidence } = after;
 
       if (!plant_id || !plant_name || !scientific_name) {
-        res.status(400).json({ error: 'Missing required fields' });
+        console.warn(`[enrichInfo] ${requestId}: missing fields — removing`);
+        await snap.delete().catch(() => {});
         return;
       }
 
@@ -100,7 +107,7 @@ export const enrichInfo = functions
 
       if (!aiUrl || !aiKey) {
         console.warn('[enrichInfo] AI gateway not configured — skipping enrichment');
-        res.status(200).json({ status: 'skipped', reason: 'AI gateway not configured' });
+        await snap.update({ status: 'skipped', reason: 'no_gateway' }).catch(() => {});
         return;
       }
 
@@ -139,7 +146,7 @@ export const enrichInfo = functions
         enriched = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(content);
       } catch (parseErr) {
         console.error('[enrichInfo] Failed to parse AI response JSON:', content.substring(0, 200));
-        res.status(500).json({ error: 'Failed to parse enrichment response' });
+        await snap.update({ status: 'failed', reason: 'bad_json' }).catch(() => {});
         return;
       }
 
@@ -149,15 +156,17 @@ export const enrichInfo = functions
       };
 
       if (enriched.en) {
-        if (enriched.en.description) updateData.description_en = enriched.en.description;
-        if (enriched.en.origin) updateData.origin_en = enriched.en.origin;
-        if (enriched.en.characteristics) updateData.characteristics_en = enriched.en.characteristics;
-        if (enriched.en.habitat) updateData.habitat_en = enriched.en.habitat;
-        if (enriched.en.uses) updateData.uses_en = enriched.en.uses;
-        if (enriched.en.care) updateData.care_en = enriched.en.care;
-        if (enriched.en.fun_facts) updateData.fun_facts_en = enriched.en.fun_facts;
+        if (enriched.en.description) { updateData.description_en = enriched.en.description; updateData.description = enriched.en.description; }
+        if (enriched.en.origin) { updateData.origin_en = enriched.en.origin; updateData.origin = enriched.en.origin; }
+        if (enriched.en.characteristics) { updateData.characteristics_en = enriched.en.characteristics; updateData.characteristics = enriched.en.characteristics; }
+        if (enriched.en.habitat) { updateData.habitat_en = enriched.en.habitat; updateData.habitat = enriched.en.habitat; }
+        if (enriched.en.uses) { updateData.uses_en = enriched.en.uses; updateData.uses = enriched.en.uses; }
+        if (enriched.en.care) { updateData.care_en = enriched.en.care; updateData.care = enriched.en.care; }
+        if (enriched.en.fun_facts) { updateData.fun_facts_en = enriched.en.fun_facts; updateData.fun_facts = enriched.en.fun_facts; }
+        if (enriched.en.common_name_kh) updateData.name_kh = enriched.en.common_name_kh;
       }
 
+      // Also add Khmer common name to enrichment prompt expectations via kh block
       if (enriched.kh) {
         if (enriched.kh.description) updateData.description_kh = enriched.kh.description;
         if (enriched.kh.origin) updateData.origin_kh = enriched.kh.origin;
@@ -166,12 +175,14 @@ export const enrichInfo = functions
         if (enriched.kh.uses) updateData.uses_kh = enriched.kh.uses;
         if (enriched.kh.care) updateData.care_kh = enriched.kh.care;
         if (enriched.kh.fun_facts) updateData.fun_facts_kh = enriched.kh.fun_facts;
+        if (enriched.kh.name) updateData.name_kh = enriched.kh.name;
       }
 
       if (enriched.en) {
         const keywords = new Set<string>();
         if (plant_name) keywords.add(plant_name.toLowerCase());
         if (scientific_name) keywords.add(scientific_name.toLowerCase());
+        if (updateData.name_kh) keywords.add(String(updateData.name_kh));
         if (enriched.en.origin) keywords.add(enriched.en.origin.toLowerCase());
         if (enriched.en.fun_facts) {
           for (const fact of enriched.en.fun_facts) {
@@ -184,9 +195,11 @@ export const enrichInfo = functions
       await plantRef.update(updateData);
       console.log(`[enrichInfo] Successfully enriched plant: ${plant_name}`);
 
-      res.status(200).json({ status: 'enriched', plant_id });
+      // Done — remove queue doc (keeps collection small; Firestore trigger
+      // onWrite sees delete and the guard `after==null` no-ops).
+      await snap.delete().catch(() => {});
     } catch (error: any) {
       console.error('[enrichInfo] Error:', error.message);
-      res.status(500).json({ error: 'Enrichment failed' });
+      await snap.update({ status: 'failed', reason: String(error.message).slice(0, 200) }).catch(() => {});
     }
   });

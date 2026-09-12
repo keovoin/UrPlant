@@ -3,7 +3,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ====================
-    // HELPER FUNCTIONS
+    // HELPERS
     // ====================
     function isAuthenticated() {
       return request.auth != null;
@@ -13,6 +13,15 @@ service cloud.firestore {
     }
     function isOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
+    }
+    // Fields a normal user may never write about themselves — only admin (or
+    // Cloud Functions via Admin SDK, which bypasses rules entirely).
+    function isPrivilegedFieldChange() {
+      let changed = request.resource.data.diff(resource == null ? {} : resource.data).affectedKeys();
+      return changed.hasAny(['tier', 'total_xp', 'level', 'total_scans', 'plants_unlocked',
+        'normal_count', 'rare_count', 'special_rare_count', 'daily_scans_limit',
+        'daily_scans_used', 'last_scan_date', 'trial_ends_at', 'achievements_earned',
+        'deleted_at', 'admin']);
     }
 
     // ====================
@@ -24,23 +33,24 @@ service cloud.firestore {
     }
 
     // ====================
-    // USERS (owner read/write, admin read)
+    // USERS (owner reads + edits profile basics; progression & tier are
+    // server-managed ONLY — Cloud Functions/Admin SDK writes bypass rules)
     // ====================
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) || isAdmin();
-      allow delete: if isOwner(userId);
+      allow create: if false; // auth trigger (Admin SDK) provisions this doc
+      allow update: if isAdmin()
+        || (isOwner(userId) && !isPrivilegedFieldChange());
+      allow delete: if isAdmin(); // users may not hard-delete their own record (GDPR via support/admin)
     }
 
     // ====================
-    // USER_PLANTS (owner read/write)
+    // USER_PLANTS (server-managed collection — functions write via Admin SDK)
+    // No client writes allowed: unlocks/XP are awarded by identifyPlant only.
     // ====================
     match /user_plants/{docId} {
       allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.user_id == request.auth.uid;
-      allow delete: if false;
+      allow write: if isAdmin();
     }
 
     // ====================
@@ -52,30 +62,30 @@ service cloud.firestore {
     }
 
     // ====================
-    // USER_ACHIEVEMENTS (owner read, backend write)
+    // USER_ACHIEVEMENTS (server-managed: evaluateAchievements awards them)
     // ====================
     match /user_achievements/{docId} {
       allow read: if isAuthenticated() && (resource.data.user_id == request.auth.uid || isAdmin());
-      allow create, update: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
-      allow delete: if false;
+      allow write: if isAdmin();
     }
 
     // ====================
-    // SCANS (owner read, function write)
+    // SCANS (owner read, function-created via Admin SDK; no client writes)
     // ====================
     match /scans/{scanId} {
       allow read: if isAuthenticated() && (resource.data.user_id == request.auth.uid || isAdmin());
-      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
-      allow update: if isAdmin();
-      allow delete: if false;
+      allow write: if isAdmin();
     }
 
     // ====================
-    // UNVERIFIED_PLANTS (admin only)
+    // UNVERIFIED_PLANTS (any auth user contributes one; admin curates)
     // ====================
     match /unverified_plants/{docId} {
       allow read: if isAdmin();
-      allow create: if isAuthenticated();
+      allow create: if isAuthenticated()
+        && request.resource.data.user_id == request.auth.uid
+        && request.resource.data.keys().hasAll(['scientific_name', 'status'])
+        && request.resource.data.status == 'pending';
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
@@ -85,6 +95,20 @@ service cloud.firestore {
     // ====================
     match /flagged_photos/{docId} {
       allow read, write: if isAdmin();
+    }
+
+    // ====================
+    // AI SUPPORT TABLES (server-managed only — Admin SDK writes, no client
+    // access at all; the mobile app never reads these directly)
+    // ====================
+    match /plant_safety/{speciesId} {
+      allow read, write: if false; // Cloud Functions Admin SDK bypasses rules
+    }
+    match /enrich_requests/{requestId} {
+      allow read, write: if false;
+    }
+    match /daily_counters/{docId} {
+      allow read, write: if false;
     }
   }
 }

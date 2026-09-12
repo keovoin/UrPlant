@@ -159,6 +159,11 @@ export async function evaluateAchievements(uid: string): Promise<EarnedAchieveme
       });
     }
 
+    // Keep the counter the Home pill shows in sync with reality
+    await usersCol().doc(uid).update({
+      achievements_earned: admin.firestore.FieldValue.increment(1),
+    });
+
     earned.push({
       id: ach.id,
       name: ach.name_en,

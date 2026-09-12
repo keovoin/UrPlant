@@ -1,34 +1,43 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // User photos: owner upload/read, admin read
+    // User photos: owner upload/read, admin read.
+    // NOTE: identifyPlant makes the compressed specimen public on purpose
+    // (encyclopedia samples). Original full-res stays owner-gated.
     match /user_photos/{userId}/{fileName} {
-      allow read: if request.auth != null && 
+      allow read: if request.auth != null &&
         (request.auth.uid == userId || request.auth.token.admin == true);
-      allow create: if request.auth != null && 
+      allow create: if request.auth != null &&
         request.auth.uid == userId &&
-        request.resource.size < 5 * 1024 * 1024 &&
-        request.resource.contentType.matches('image/webp');
-      allow delete: if request.auth != null && request.auth.uid == userId;
+        request.resource.size < 8 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
+      allow update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null &&
+        (request.auth.uid == userId || request.auth.token.admin == true);
     }
-    
+
     // Plant images: admin write, public read
     match /plant_images/{fileName} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.token.admin == true;
     }
-    
+
     // Achievement badges: admin write, public read
     match /achievement_badges/{fileName} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.token.admin == true;
     }
-    
-    // User avatars: owner upload, public read
-    match /user_avatars/{fileName} {
+
+    // User avatars: keyed by uid so nobody can overwrite someone else's
+    // avatar (impersonation). Public read, owner write/delete.
+    match /user_avatars/{userId}/{fileName} {
       allow read: if true;
-      allow create: if request.auth != null &&
-        request.resource.size < 2 * 1024 * 1024;
+      allow create, update: if request.auth != null &&
+        request.auth.uid == userId &&
+        request.resource.size < 2 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null &&
+        (request.auth.uid == userId || request.auth.token.admin == true);
     }
   }
 }
