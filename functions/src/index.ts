@@ -8,4 +8,4 @@
 export { identifyPlant } from './identifyPlant.js';
 export { enrichInfo } from './enrichInfo.js';
 export { adminApi } from './adminApi.js';
-export { onUserCreated } from './authTriggers.js';
+export { onUserCreated, onUserDeleted } from './authTriggers.js';
